@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>리베이트 분석 시스템 (v1.3.91)</title>
+  <title>리베이트 분석 시스템 (v1.3.92)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    /* --- v1.3.87~91 디자인 시스템 유지 --- */
+    /* --- v1.3.87~92 디자인 시스템 유지 --- */
     :root{
       --bg:#f5f7fb; --card:#ffffff; --text:#1f2a37; --muted:#6b7280; --border:#e5e7eb;
       --primary:#1f5eff; --primary-2:#0b4bd6; --danger:#e11d48; --success:#10b981;
@@ -36,7 +36,6 @@
 
     main{ grid-area:body; padding:20px; overflow-y:auto; min-width: 0; }
     
-    /* 수정 모드 UI */
     .edit-mode-toggle { 
       height: 36px; padding: 0 12px; border-radius: 6px; 
       border: 1px solid var(--border); background: #fff; 
@@ -60,20 +59,13 @@
     .search-controls { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
     .field { display:flex; flex-direction:column; gap:6px; }
     .field label { font-size:12px; font-weight:600; color:var(--text); }
-    select, input[type="month"] { height:40px; border-radius:8px; border:1px solid var(--border); padding:0 12px; font-size:13px; outline:none; background:#fff; min-width:140px; }
+    select, input[type="month"] { height:40px; border-radius:8px; border:1px solid var(--border); padding:0 10px; font-size:13px; outline:none; background:#fff; min-width:140px; }
 
     .btn{ height:36px; padding:0 12px; border-radius:6px; border:1px solid var(--border); font-weight:600; font-size:11px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:0.2s; justify-content: center; }
     .btn.primary{ background:var(--primary); color:#fff; border:none; height: 40px; padding: 0 20px; font-size: 13px; border-radius: 8px; }
     .btn.success { background:var(--success); color:#fff; border:none; }
     .btn.outline { background: #fff; color: var(--text); }
     .btn.danger-outline { background: #fff; color: var(--danger); border-color: var(--danger); }
-    .btn.danger-outline:hover { background: #fff1f2; }
-
-    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
-    .kpi-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
-    .kpi-label { font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px; }
-    .kpi-value { font-size:18px; font-weight:800; color:#1e293b; }
-    .kpi-sub { font-size:10px; margin-top:4px; }
 
     .table-container{ overflow-x:auto; border:1px solid var(--border); border-radius:8px; background: #fff; margin-bottom: 16px; position: relative; }
     table{ width: 100%; min-width: max-content; border-collapse:collapse; font-size:11px; table-layout: fixed; }
@@ -81,7 +73,7 @@
     td{ padding:4px 8px; border:1px solid var(--border); color:#334155; height: 32px; }
     .center { text-align: center; }
     .right { text-align: right; }
-    .bg-total { background-color: #f8fafc !important; }
+    .bg-total { background-color: #f1f5f9 !important; font-weight: 800; }
     .sticky-col { position: sticky; left: 0; z-index: 12; width: 80px !important; background: #f1f5f9 !important; font-weight: 800; border-right: 2px solid #cbd5e1; }
     .mono { font-family: 'Courier New', monospace; font-weight: 600; }
   </style>
@@ -92,7 +84,7 @@
   <header>
     <div class="brand-wrap">
       <button class="menu-toggle" onclick="toggleLNB()">&#9776;</button>
-      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.91</span></div>
+      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.92</span></div>
     </div>
     <div class="user"><strong style="font-size:12px">비즈니스기획팀 강형구 님</strong></div>
   </header>
@@ -130,31 +122,13 @@
       </div>
       
       <div class="search-controls">
-        <div class="field">
-            <label>시작 월</label>
-            <input type="month" value="2025-10">
-        </div>
-        <div class="field">
-            <label>종료 월</label>
-            <input type="month" value="2026-09">
-        </div>
-        <div class="field">
-            <label>본부</label>
-            <select><option>전체</option></select>
-        </div>
-        <div class="field">
-            <label>부서</label>
-            <select><option>전체</option></select>
-        </div>
+        <div class="field"><label>시작 월</label><input type="month" value="2025-10"></div>
+        <div class="field"><label>종료 월</label><input type="month" value="2026-09"></div>
+        <div class="field"><label>본부</label><select><option>전체</option></select></div>
+        <div class="field"><label>부서</label><select><option>전체</option></select></div>
+        <div class="field"><label>벤더</label><select><option>전체</option><option>HP</option><option>Dell</option></select></div>
         <button class="btn primary">🔎 조회</button>
       </div>
-    </div>
-
-    <div class="kpi-row">
-      <div class="kpi-card"><div class="kpi-label">당월 지급액 계 (1월)</div><div class="kpi-value">8,475,000 <small>원</small></div><div class="kpi-sub" style="color:var(--danger)">총 3건 집행</div></div>
-      <div class="kpi-card"><div class="kpi-label">최대 지급 업체</div><div class="kpi-value">이비즈타운</div><div class="kpi-sub text-muted">4,900,000원 지급</div></div>
-      <div class="kpi-card"><div class="kpi-label">미집행 잔액</div><div class="kpi-value" style="color:var(--success)">8,475,000 <small>원</small></div><div class="kpi-sub" style="color:var(--success)">입금액 대비 정산 대기</div></div>
-      <div class="kpi-card"><div class="kpi-label">프로그램 비중</div><div class="kpi-value">Sell-Out (81%)</div><div class="kpi-sub">총 6,900,000원</div></div>
     </div>
 
     <div class="table-container">
@@ -175,40 +149,29 @@
           </tr>
         </thead>
         <tbody id="rebateBody">
-          <tr class="month-group-1">
-            <td rowspan="2" class="sticky-col center">1월</td>
+          <tr class="month-group-1 data-row" data-month="1월">
+            <td rowspan="1" class="sticky-col center month-label">1월</td>
             <td class="editable-cell"><input type="text" class="table-input center" value="Sell-Thru"></td>
             <td class="editable-cell"><input type="text" class="table-input center" value="-"></td>
-            <td class="editable-cell"><input type="text" class="table-input right mono" value="0"></td>
-            <td class="editable-cell"><input type="text" class="table-input right mono" value="0"></td>
-            <td class="right mono bg-total">0</td>
-            <td class="right mono">1,575,000</td>
-            <td class="editable-cell"><input type="text" class="table-input right mono" value="1,575,000"></td>
-            <td class="editable-cell"><input type="text" class="table-input center" value="엔에스아이티"></td>
-            <td class="editable-cell"><input type="text" class="table-input center mono" value="47555052"></td>
-            <td class="right mono">1,575,000</td>
-          </tr>
-          <tr class="month-group-1">
-            <td class="editable-cell"><input type="text" class="table-input center" value="Sell-Out"></td>
-            <td class="editable-cell"><input type="text" class="table-input center" value="-"></td>
-            <td class="editable-cell"><input type="text" class="table-input right mono" value="0"></td>
-            <td class="editable-cell"><input type="text" class="table-input right mono" value="0"></td>
-            <td class="right mono bg-total">0</td>
-            <td class="right mono">4,900,000</td>
-            <td class="editable-cell"><input type="text" class="table-input right mono" value="4,900,000"></td>
-            <td class="editable-cell"><input type="text" class="table-input center" value="이비즈타운"></td>
-            <td class="editable-cell"><input type="text" class="table-input center mono" value="47348356"></td>
-            <td class="right mono">4,900,000</td>
+            <td class="editable-cell"><input type="text" class="table-input right mono val-a" value="1,000,000" oninput="calcRow(this)"></td>
+            <td class="editable-cell"><input type="text" class="table-input right mono val-b" value="500,000" oninput="calcRow(this)"></td>
+            <td class="right mono bg-total row-ab">1,500,000</td>
+            <td class="right mono">0</td>
+            <td class="editable-cell"><input type="text" class="table-input right mono val-pay" value="1,000,000" oninput="calcRow(this)"></td>
+            <td class="editable-cell"><input type="text" class="table-input center" value="업체명"></td>
+            <td class="editable-cell"><input type="text" class="table-input center mono" value="-"></td>
+            <td class="right mono row-balance">500,000</td>
           </tr>
         </tbody>
+        <tfoot>
+            <tr id="totalRow" class="bg-total"><td colspan="3" class="center">전체 총 합계</td><td id="totalA" class="right mono">0</td><td id="totalB" class="right mono">0</td><td id="totalAB" class="right mono">0</td><td></td><td id="totalPay" class="right mono">0</td><td colspan="2"></td><td id="totalBal" class="right mono">0</td></tr>
+        </tfoot>
       </table>
     </div>
   </main>
 </div>
 
 <script>
-  let currentMonthCount = 1;
-
   function toggleLNB() { document.getElementById('appContainer').classList.toggle('lnb-hidden'); }
 
   function toggleEditMode() {
@@ -218,93 +181,121 @@
     label.classList.toggle('active', isEdit);
   }
 
-  // 4) 행 추가 버튼 클릭 시 수정 모드 자동 활성화
+  // 1) A+B 자동 계산 로직
+  function calcRow(el) {
+    const row = el.closest('tr');
+    const a = parseInt(row.querySelector('.val-a').value.replace(/,/g, '')) || 0;
+    const b = parseInt(row.querySelector('.val-b').value.replace(/,/g, '')) || 0;
+    const pay = parseInt(row.querySelector('.val-pay').value.replace(/,/g, '')) || 0;
+    
+    const ab = a + b;
+    const bal = ab - pay;
+    
+    row.querySelector('.row-ab').innerText = ab.toLocaleString();
+    row.querySelector('.row-balance').innerText = bal.toLocaleString();
+    updateTotal();
+  }
+
+  // 4) 전체 합계 업데이트
+  function updateTotal() {
+    let tA=0, tB=0, tAB=0, tPay=0, tBal=0;
+    document.querySelectorAll('.data-row').forEach(row => {
+        tA += parseInt(row.querySelector('.val-a').value.replace(/,/g, '')) || 0;
+        tB += parseInt(row.querySelector('.val-b').value.replace(/,/g, '')) || 0;
+        tPay += parseInt(row.querySelector('.val-pay').value.replace(/,/g, '')) || 0;
+    });
+    tAB = tA + tB; tBal = tAB - tPay;
+    document.getElementById('totalA').innerText = tA.toLocaleString();
+    document.getElementById('totalB').innerText = tB.toLocaleString();
+    document.getElementById('totalAB').innerText = tAB.toLocaleString();
+    document.getElementById('totalPay').innerText = tPay.toLocaleString();
+    document.getElementById('totalBal').innerText = tBal.toLocaleString();
+  }
+
+  // 2) 월 선택 추가 기능
+  let monthList = ["1월"];
+  function addMonth() {
+    const newMonth = prompt("추가할 월을 입력하세요 (예: 2월, 3월)", (monthList.length + 1) + "월");
+    if(!newMonth) return;
+    monthList.push(newMonth);
+    
+    const tbody = document.getElementById('rebateBody');
+    const newRow = document.createElement('tr');
+    const mIdx = monthList.length;
+    newRow.className = `month-group-${mIdx} data-row`;
+    newRow.innerHTML = `
+      <td rowspan="1" class="sticky-col center month-label">${newMonth}</td>
+      <td class="editable-cell"><input type="text" class="table-input center" value="프로그램"></td>
+      <td class="editable-cell"><input type="text" class="table-input center" value="-"></td>
+      <td class="editable-cell"><input type="text" class="table-input right mono val-a" value="0" oninput="calcRow(this)"></td>
+      <td class="editable-cell"><input type="text" class="table-input right mono val-b" value="0" oninput="calcRow(this)"></td>
+      <td class="right mono bg-total row-ab">0</td>
+      <td class="right mono">0</td>
+      <td class="editable-cell"><input type="text" class="table-input right mono val-pay" value="0" oninput="calcRow(this)"></td>
+      <td class="editable-cell"><input type="text" class="table-input center" value="-"></td>
+      <td class="editable-cell"><input type="text" class="table-input center mono" value="-"></td>
+      <td class="right mono row-balance">0</td>
+    `;
+    tbody.appendChild(newRow);
+    updateTotal();
+  }
+
   function addRow() {
     const tbody = document.getElementById('rebateBody');
-    const lastMonthGroup = `month-group-${currentMonthCount}`;
-    const firstRowInGroup = tbody.querySelector(`.${lastMonthGroup}`);
+    const lastRow = tbody.querySelector('.data-row:last-child');
+    if(!lastRow) return;
     
-    if (firstRowInGroup) {
-      const firstTd = firstRowInGroup.querySelector('td[rowspan]');
-      const currentRS = parseInt(firstTd.getAttribute('rowspan'));
-      firstTd.setAttribute('rowspan', currentRS + 1);
+    const monthClass = lastRow.classList[0];
+    const firstRow = tbody.querySelector('.' + monthClass);
+    const labelTd = firstRow.querySelector('.month-label');
+    labelTd.setAttribute('rowspan', parseInt(labelTd.getAttribute('rowspan')) + 1);
 
-      const newRow = document.createElement('tr');
-      newRow.className = lastMonthGroup;
-      newRow.innerHTML = `
-        <td class="editable-cell"><input type="text" class="table-input center" value="프로그램"></td>
-        <td class="editable-cell"><input type="text" class="table-input center" value="-"></td>
-        <td class="editable-cell"><input type="text" class="table-input right mono" value="0"></td>
-        <td class="editable-cell"><input type="text" class="table-input right mono" value="0"></td>
-        <td class="right mono bg-total">0</td>
-        <td class="right mono">0</td>
-        <td class="editable-cell"><input type="text" class="table-input right mono" value="0"></td>
-        <td class="editable-cell"><input type="text" class="table-input center" value="-"></td>
-        <td class="editable-cell"><input type="text" class="table-input center mono" value="-"></td>
-        <td class="right mono">0</td>
-      `;
-      tbody.appendChild(newRow);
-
-      // 수정 모드 자동 활성화 (꺼져있을 경우에만)
-      const editToggle = document.getElementById('editToggle');
-      if (!editToggle.checked) {
-        editToggle.checked = true;
-        toggleEditMode();
-      }
-    }
+    const newRow = document.createElement('tr');
+    newRow.className = `${monthClass} data-row`;
+    newRow.innerHTML = `
+      <td class="editable-cell"><input type="text" class="table-input center" value="신규 항목"></td>
+      <td class="editable-cell"><input type="text" class="table-input center" value="-"></td>
+      <td class="editable-cell"><input type="text" class="table-input right mono val-a" value="0" oninput="calcRow(this)"></td>
+      <td class="editable-cell"><input type="text" class="table-input right mono val-b" value="0" oninput="calcRow(this)"></td>
+      <td class="right mono bg-total row-ab">0</td>
+      <td class="right mono">0</td>
+      <td class="editable-cell"><input type="text" class="table-input right mono val-pay" value="0" oninput="calcRow(this)"></td>
+      <td class="editable-cell"><input type="text" class="table-input center" value="-"></td>
+      <td class="editable-cell"><input type="text" class="table-input center mono" value="-"></td>
+      <td class="right mono row-balance">0</td>
+    `;
+    tbody.appendChild(newRow);
+    
+    const editToggle = document.getElementById('editToggle');
+    if (!editToggle.checked) { editToggle.checked = true; toggleEditMode(); }
+    updateTotal();
   }
 
-  // 1) 행 삭제 기능 구현 (경고창 포함)
   function deleteRow() {
     const tbody = document.getElementById('rebateBody');
-    const lastMonthGroup = `month-group-${currentMonthCount}`;
-    const rows = tbody.querySelectorAll(`.${lastMonthGroup}`);
-    
-    if (rows.length > 1) {
-      if (confirm("선택한 행을 삭제하시겠습니까? 삭제 시 데이터도 함께 삭제됩니다.")) {
+    const rows = tbody.querySelectorAll('.data-row');
+    if (rows.length > 1 && confirm("행을 삭제하시겠습니까?")) {
         const lastRow = rows[rows.length - 1];
-        tbody.removeChild(lastRow);
+        const monthClass = lastRow.classList[0];
+        const monthRows = tbody.querySelectorAll('.' + monthClass);
         
-        // 첫 번째 행의 rowspan 조정
-        const firstRow = rows[0];
-        const firstTd = firstRow.querySelector('td[rowspan]');
-        const currentRS = parseInt(firstTd.getAttribute('rowspan'));
-        firstTd.setAttribute('rowspan', currentRS - 1);
-      }
-    } else {
-      alert("더 이상 삭제할 수 있는 행이 없습니다. (최소 1행 유지)");
+        if(monthRows.length > 1) {
+            const firstRow = monthRows[0];
+            const labelTd = firstRow.querySelector('.month-label');
+            labelTd.setAttribute('rowspan', parseInt(labelTd.getAttribute('rowspan')) - 1);
+        }
+        tbody.removeChild(lastRow);
+        updateTotal();
     }
   }
 
-  // 3) 엑셀 다운로드 기능 구현
   function downloadExcel() {
     const table = document.getElementById('rebateTable');
     const wb = XLSX.utils.table_to_book(table, {sheet: "리베이트 현황"});
     XLSX.writeFile(wb, `Etevers_Rebate_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
   }
 
-  function addMonth() {
-    currentMonthCount++;
-    const tbody = document.getElementById('rebateBody');
-    const nextMonth = `${currentMonthCount}월`;
-    
-    const newGroupRow = document.createElement('tr');
-    newGroupRow.className = `month-group-${currentMonthCount}`;
-    newGroupRow.innerHTML = `
-      <td rowspan="1" class="sticky-col center">${nextMonth}</td>
-      <td class="editable-cell"><input type="text" class="table-input center" value="프로그램"></td>
-      <td class="editable-cell"><input type="text" class="table-input center" value="-"></td>
-      <td class="editable-cell"><input type="text" class="table-input right mono" value="0"></td>
-      <td class="editable-cell"><input type="text" class="table-input right mono" value="0"></td>
-      <td class="right mono bg-total">0</td>
-      <td class="right mono">0</td>
-      <td class="editable-cell"><input type="text" class="table-input right mono" value="0"></td>
-      <td class="editable-cell"><input type="text" class="table-input center" value="-"></td>
-      <td class="editable-cell"><input type="text" class="table-input center mono" value="-"></td>
-      <td class="right mono">0</td>
-    `;
-    tbody.appendChild(newGroupRow);
-  }
+  window.onload = updateTotal;
 </script>
 </body>
 </html>
