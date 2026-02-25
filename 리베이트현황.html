@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>리베이트 분석 시스템 (v1.3.96)</title>
+  <title>리베이트 분석 시스템 (v1.3.97)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     /* --- 디자인 시스템 --- */
@@ -47,13 +47,19 @@
     .edit-mode-toggle.active { background: #eff6ff; border-color: var(--primary); }
     .edit-mode-toggle.active span { color: var(--primary); }
 
-    /* [개선] Select/Input UI 및 중앙 정렬 */
+    /* [개선] 정렬 및 UI 가독성 강화 */
     .table-input { 
       width: 100%; border: 1px solid transparent; background: transparent; 
       text-align: center; text-align-last: center; padding: 4px 8px; font-family: inherit; 
       font-size: 11px; color: inherit; border-radius: 6px; 
       pointer-events: none; outline: none; appearance: none;
     }
+    /* 1) 금액 항목 우측 정렬 강제 적용 */
+    .table-input.right { 
+      text-align: right !important; 
+      text-align-last: right !important; 
+    }
+    
     .edit-active .table-input { 
       pointer-events: auto; border: 1px solid #cbd5e1; background: #ffffff; 
       box-shadow: 0 1px 2px rgba(0,0,0,0.05);
@@ -89,15 +95,17 @@
     th{ position:sticky; top:0; background:#f8fafc; padding:8px; border:1px solid var(--border); text-align:center; color:#64748b; font-weight: 700; z-index: 10; }
     td{ padding:4px 8px; border:1px solid var(--border); color:#334155; height: 38px; text-align: center; } 
     
-    /* [기능 추가] 컬럼 너비 조절 리사이저 */
     .resizer { position: absolute; top: 0; right: 0; width: 4px; cursor: col-resize; user-select: none; height: 100%; z-index: 25; }
     .resizer:hover { background: var(--primary); }
+
+    /* 연도 구분 행 스타일 */
+    .year-divider { background-color: #0f172a !important; color: #ffffff !important; font-weight: 800; font-size: 12px; }
 
     .right { text-align: right !important; }
     .center { text-align: center !important; }
     .bg-subtotal { background-color: #f8fafc !important; font-weight: 700; color: #1e293b !important; }
     .bg-total { background-color: #f1f5f9 !important; font-weight: 800; color: #0f172a !important; }
-    .sticky-col { position: sticky; left: 0; z-index: 12; width: 80px !important; background: #f1f5f9 !important; font-weight: 800; border-right: 2px solid #cbd5e1; }
+    .sticky-col { position: sticky; left: 0; z-index: 12; width: 100px !important; background: #f1f5f9 !important; font-weight: 800; border-right: 2px solid #cbd5e1; }
     .mono { font-family: 'Courier New', monospace; font-weight: 600; }
   </style>
 </head>
@@ -107,7 +115,7 @@
   <header>
     <div class="brand-wrap">
       <button class="menu-toggle" onclick="toggleLNB()">&#9776;</button>
-      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.96</span></div>
+      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.97</span></div>
     </div>
     <div class="user"><strong style="font-size:12px">비즈니스기획팀 강형구 님</strong></div>
   </header>
@@ -145,8 +153,8 @@
       </div>
       
       <div class="search-controls">
-        <div class="field"><label>시작 월</label><input type="month" value="2025-10"></div>
-        <div class="field"><label>종료 월</label><input type="month" value="2026-09"></div>
+        <div class="field"><label>시작 월</label><input type="month" id="startRange" value="2025-10"></div>
+        <div class="field"><label>종료 월</label><input type="month" id="endRange" value="2026-09"></div>
         <div class="field"><label>본부</label><select><option>전체</option></select></div>
         <div class="field"><label>부서</label><select><option>전체</option></select></div>
         <div class="field"><label>벤더</label><select><option>전체</option><option>HP</option><option>Dell</option></select></div>
@@ -172,8 +180,9 @@
           </tr>
         </thead>
         <tbody id="rebateBody">
-          <tr class="data-row" data-month="1월" onclick="selectRow(this)">
-            <td rowspan="2" class="sticky-col center month-label">1월</td>
+          <tr class="year-divider"><td colspan="11" class="center">2025년</td></tr>
+          <tr class="data-row" data-month="2025-10" onclick="selectRow(this)">
+            <td rowspan="2" class="sticky-col center month-label">2025년 10월</td>
             <td class="editable-cell">
               <select class="table-input">
                 <option value="sell-In">sell-In</option><option value="sell-Thru">sell-Thru</option>
@@ -190,8 +199,8 @@
             <td class="editable-cell"><input type="text" class="table-input mono" value="-"></td>
             <td class="right mono row-balance">500,000</td>
           </tr>
-          <tr class="subtotal-row bg-subtotal" data-month="1월">
-            <td colspan="2" class="center">1월 소계</td>
+          <tr class="subtotal-row bg-subtotal" data-month="2025-10">
+            <td colspan="2" class="center">10월 소계</td>
             <td class="right mono m-total-a">0</td><td class="right mono m-total-b">0</td><td class="right mono m-total-ab">0</td>
             <td class="right mono">0</td><td class="right mono m-total-pay">0</td><td colspan="2"></td><td class="right mono m-total-bal">0</td>
           </tr>
@@ -231,7 +240,6 @@
     selectedRow.classList.add('selected');
   }
 
-  // [기능 추가] 컬럼 너비 수동 조절 로직
   function initResizable() {
     document.querySelectorAll('th').forEach(col => {
       if (!col.querySelector('.resizer')) {
@@ -302,13 +310,25 @@
     calcAll();
   }
 
+  // 2) 연도 구분 로직이 포함된 월 추가 기능
   function addMonth() {
-    const name = prompt("추가할 월을 입력하세요", (document.querySelectorAll('.month-label').length + 1) + "월");
-    if(!name) return;
+    const rawValue = prompt("추가할 월을 입력하세요 (예: 2026-01)", "");
+    if(!rawValue || !/^\d{4}-\d{2}$/.test(rawValue)) { alert("형식이 올바르지 않습니다 (YYYY-MM)"); return; }
+    
+    const [year, month] = rawValue.split('-');
+    const labelName = `${year}년 ${parseInt(month)}월`;
     const tbody = document.getElementById('rebateBody');
+
+    // 마지막 연도 확인 후 연도가 바뀌면 구분 행 추가
+    const lastDivider = [...document.querySelectorAll('.year-divider')].pop();
+    const lastYear = lastDivider ? lastDivider.innerText : "";
+    if (lastYear !== `${year}년`) {
+        tbody.insertAdjacentHTML('beforeend', `<tr class="year-divider"><td colspan="11" class="center">${year}년</td></tr>`);
+    }
+
     const html = `
-      <tr class="data-row" data-month="${name}" onclick="selectRow(this)">
-        <td rowspan="2" class="sticky-col center month-label">${name}</td>
+      <tr class="data-row" data-month="${rawValue}" onclick="selectRow(this)">
+        <td rowspan="2" class="sticky-col center month-label">${labelName}</td>
         <td class="editable-cell"><select class="table-input"><option value="sell-In">sell-In</option><option value="sell-Thru">sell-Thru</option><option value="Sell-out">Sell-out</option><option value="MDF">MDF</option></select></td>
         <td class="editable-cell"><input type="text" class="table-input" value="신규 프로그램"></td>
         <td class="editable-cell"><input type="text" class="table-input right mono val-a" value="0" oninput="calcAll()"></td>
@@ -318,8 +338,8 @@
         <td class="editable-cell"><input type="text" class="table-input" value="-"></td><td class="editable-cell"><input type="text" class="table-input mono" value="-"></td>
         <td class="right mono row-balance">0</td>
       </tr>
-      <tr class="subtotal-row bg-subtotal" data-month="${name}">
-        <td colspan="2" class="center">${name} 소계</td>
+      <tr class="subtotal-row bg-subtotal" data-month="${rawValue}">
+        <td colspan="2" class="center">${parseInt(month)}월 소계</td>
         <td class="right mono m-total-a">0</td><td class="right mono m-total-b">0</td><td class="right mono m-total-ab">0</td>
         <td class="right mono">0</td><td class="right mono m-total-pay">0</td><td colspan="2"></td><td class="right mono m-total-bal">0</td>
       </tr>
@@ -371,7 +391,7 @@
 
   window.onload = function() {
     calcAll();
-    initResizable(); // 리사이저 초기화
+    initResizable();
   };
 </script>
 </body>
