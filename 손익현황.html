@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>에티버스이비티 손익현황 분석 (v1.3.51)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <style>
+    /* --- 기존 UI 스타일 유지 --- */
+    :root{
+      --bg:#f5f7fb; --card:#ffffff; --text:#1f2a37; --muted:#6b7280; --border:#e5e7eb;
+      --primary:#1f5eff; --primary-2:#0b4bd6; --danger:#e11d48; --success:#10b981;
+      --radius: 12px;
+      --font: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Noto Sans KR", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{ margin:0; background:var(--bg); color:var(--text); font-family:var(--font); -webkit-font-smoothing: antialiased; }
+
+    .app{ min-height:100vh; display:grid; grid-template-columns: 260px 1fr; grid-template-rows: 64px 1fr; grid-template-areas: "head head" "lnb body"; transition: grid-template-columns 0.3s ease; }
+    .app.lnb-hidden { grid-template-columns: 0px 1fr; }
+    
+    header{ grid-area:head; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#0f2342; color:#fff; position:sticky; top:0; z-index:100; }
+    .brand-wrap { display:flex; align-items:center; gap:12px; }
+    .menu-toggle { background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; display: flex; align-items: center; justify-content: center; padding: 0; outline: none; transition: 0.2s; }
+    .menu-toggle:hover { color: #94a3b8; }
+    .brand{ display:flex; align-items:center; gap:12px; font-weight:800; font-size:16px; letter-spacing:-.5px; }
+    .pill { background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:6px; font-size:10px; font-weight:400; margin-left:8px; border:1px solid rgba(255,255,255,0.2); }
+    
+    nav{ grid-area:lnb; padding:15px; border-right:1px solid var(--border); background:#fff; position:sticky; top:64px; height:calc(100vh - 64px); overflow-y:auto; display:flex; flex-direction:column; gap:4px; transition: padding 0.3s ease, opacity 0.2s ease; overflow-x: hidden; white-space: nowrap; }
+    .app.lnb-hidden nav { padding-left: 0; padding-right: 0; border-right: none; opacity: 0; pointer-events: none; }
+    
+    .lnb-title { font-size:11px; color:#94a3b8; font-weight:700; margin:8px 0 4px 10px; text-transform:uppercase; }
+    .lnb-item{ display:flex; align-items:center; gap:10px; padding:10px; border-radius:10px; cursor:pointer; color:#475569; transition:0.2s; text-decoration: none; font-size: 13px; }
+    .lnb-item.active{ background:#eff6ff; color:#2563eb; font-weight:700; }
+    .lnb-ico{ font-size:16px; width:20px; text-align:center; }
+    .lnb-sub{ font-size:10px; color:#94a3b8; margin-top:1px; font-weight:400; }
+    .lnb-divider { height:1px; background:var(--border); margin:10px 0; }
+
+    main{ grid-area:body; padding:20px; max-width:1800px; overflow-y:auto; min-width: 0; }
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow: 0 2px 4px rgba(0,0,0,0.02); padding:16px; margin-bottom:16px; }
+    .card .hd{ display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+    .card .hd h3{ margin:0; font-size:15px; font-weight:700; color:#1e293b; }
+
+    .edit-mode-toggle { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; background: #f1f5f9; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: 0.2s; }
+    .edit-mode-toggle.disabled { opacity: 0.5; cursor: not-allowed; background: #e2e8f0; }
+    .edit-mode-toggle span { font-size: 11px; font-weight: 600; color: #2563eb; }
+    .edit-mode-toggle.disabled span { color: var(--muted); }
+
+    .top-actions { display:flex; align-items:center; gap:8px; }
+    .controls{ display:flex; flex-wrap:wrap; gap:12px; align-items:end; }
+    .field{ display:flex; flex-direction:column; gap:4px; min-width:100px; }
+    label{ font-size:11px; font-weight:600; color:var(--muted); }
+    input, select{ height:36px; border-radius:6px; border:1px solid var(--border); padding:0 10px; font-size:12px; outline:none; background:#fff; }
+
+    .btn{ height:36px; padding:0 12px; border-radius:6px; border:1px solid var(--border); font-weight:600; font-size:11px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:0.2s; justify-content: center; }
+    .btn.primary{ background:var(--primary); color:#fff; border:none; }
+    .btn.success { background:var(--success); color:#fff; border:none; }
+    .btn.outline { background: #fff; color: var(--text); }
+
+    .table-container{ overflow-x:auto; overflow-y:visible; border:1px solid var(--border); border-radius:8px; background: #fff; margin-bottom: 8px; position: relative; }
+    .table-container::-webkit-scrollbar { height: 10px; }
+    .table-container::-webkit-scrollbar-track { background: #f8fafc; border-radius: 8px; }
+    .table-container::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f8fafc; }
+    .table-container::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    table{ width: 100%; min-width: max-content; border-collapse:collapse; font-size:12px; table-layout: fixed; }
+    th{ position:sticky; top:0; background:#f8fafc; padding:8px; border:1px solid var(--border); z-index: 10; text-align:center; color:#64748b; }
+    td{ padding:4px 8px; border:1px solid var(--border); color:#334155; height: 32px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    
+    .sticky-col { position: sticky; left: 0; z-index: 12; }
+    th.sticky-col { z-index: 20; background-color: #f8fafc !important; border-right: 2px solid #cbd5e1 !important; box-shadow: 2px 0 4px rgba(0,0,0,0.03); }
+    td.sticky-col { z-index: 15; background-color: #f1f5f9 !important; border-right: 2px solid #cbd5e1 !important; box-shadow: 2px 0 4px rgba(0,0,0,0.03); }
+
+    .resizer { position: absolute; top: 0; right: 0; width: 4px; cursor: col-resize; user-select: none; height: 100%; z-index: 25; }
+    .resizer:hover { background: var(--primary); }
+
+    .table-input { width: 100%; border: 1px solid transparent; background: transparent; text-align: right; padding: 2px 4px; font-family: 'Courier New', monospace; font-size: 12px; font-weight: 700; color: #334155; border-radius: 4px; pointer-events: none; transition: all 0.2s; }
+    .edit-active .table-input:not([readonly]) { pointer-events: auto; border-color: #cbd5e1; background: #ffffff; box-shadow: inset 0 1px 2px rgba(0,0,0,0.05); color: #0f172a; }
+    .edit-active .table-input:not([readonly]):hover { border-color: #94a3b8; }
+    .edit-active .table-input:not([readonly]):focus { border-color: var(--primary); box-shadow: 0 0 0 2px rgba(31, 94, 255, 0.2); background: #ffffff; outline: none; }
+    
+    .right{ text-align:right; } .center{ text-align:center; } .mono{ font-family:'Courier New', monospace; font-weight:600; }
+    .bg-total { background-color: #f1f5f9 !important; font-weight: 800; }
+    .highlight-row { background-color: #fffbeb !important; font-weight: 700; }
+    .achieve-rate { font-size: 10px; color: var(--primary); font-weight: 500; margin-left: 4px; }
+    .font-bold { font-weight: 800; }
+    .text-success { color: var(--success); font-weight: 700; }
+    .text-danger { color: var(--danger); font-weight: 700; }
+    
+    /* 차트 컨테이너 스타일 */
+    .chart-container { position: relative; height: 280px; width: 100%; margin-top: 10px; }
+  </style>
+</head>
+<body>
+
+<div class="app" id="appContainer">
+  <header>
+    <div class="brand-wrap">
+      <button class="menu-toggle" onclick="toggleLNB()" title="메뉴 열기/숨기기">&#9776;</button>
+      <div class="brand">📊 에티버스이비티 주요 지표 현황 <span class="pill">v1.3.51</span></div>
+    </div>
+    <div class="user"><strong style="font-size:12px">Admin</strong></div>
+  </header>
+
+  <nav>
+    <div class="lnb-title">EBT Management</div>
+    <div class="lnb-item active"><div class="lnb-ico">📉</div><div><div>손익현황</div><div class="lnb-sub">전사 분석</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">🎯</div><div><div>목표현황</div><div class="lnb-sub">목표달성율</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">💰</div><div><div>매출현황</div><div class="lnb-sub">출하완료 기준</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">📦</div><div><div>재고현황</div><div class="lnb-sub">재고 분석</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">🧾</div><div><div>미수금현황</div><div class="lnb-sub">Phase 2</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">📄</div><div><div>미발행현황</div><div class="lnb-sub">세금계산서</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">🏦</div><div><div>운전자금현황</div><div class="lnb-sub">Cash Flow</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">🏷️</div><div><div>리베이트 현황</div><div class="lnb-sub">Vendor Rebate</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">↩️</div><div><div>반품이력조회</div><div class="lnb-sub">Return History</div></div></div>
+    <div class="lnb-divider"></div>
+    <div class="lnb-item"><div class="lnb-ico">⚙️</div><div><div>관리자 설정</div><div class="lnb-sub">System</div></div></div>
+  </nav>
+
+  <main id="mainContainer">
+    <div class="card">
+      <div class="hd">
+        <h3>손익 데이터 검색 및 관리</h3>
+        <div class="top-actions">
+          <button class="btn outline" onclick="document.getElementById('fileInput').click()">⬆️ 기초자료 업로드</button>
+          <input type="file" id="fileInput" style="display:none" onchange="handleFileUpload(event)">
+          <button class="btn outline" onclick="downloadExcel()">📥 엑셀 다운로드</button>
+          <label class="edit-mode-toggle" id="editToggleLabel" title="수정 모드는 월별 조회 시에만 가능합니다.">
+            <input type="checkbox" id="editToggle" onchange="toggleEditMode()">
+            <span>수정 모드</span>
+          </label>
+          <button class="btn success" onclick="alert('데이터가 저장되었습니다.')">💾 저장</button>
+        </div>
+      </div>
+      <div class="controls">
+        <div class="field">
+          <label>조회 기준</label>
+          <select id="viewType" onchange="toggleViewInputs()">
+            <option value="month">월별 비교</option>
+            <option value="year">연도별 비교 (3개년 등)</option>
+          </select>
+        </div>
+        <div class="field view-month"><label>시작 월</label><input type="month" id="startMonth" value="2025-10"></div>
+        <div class="field view-month"><label>종료 월</label><input type="month" id="endMonth" value="2026-09"></div>
+        <div class="field view-year" style="display:none;"><label>시작 연도</label><input type="number" id="startYear" value="2024" min="2000" max="2100"></div>
+        <div class="field view-year" style="display:none;"><label>종료 연도</label><input type="number" id="endYear" value="2026" min="2000" max="2100"></div>
+        <div class="field"><label>본부</label><select><option>전체</option></select></div>
+        <div class="field"><label>부서</label><select><option>전체</option></select></div>
+        <button class="btn primary" onclick="renderDynamicTables()">🔎 조회</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd">
+        <h3 id="chartTitle">손익 추이 시각화 (매출액 및 영업이익률)</h3>
+      </div>
+      <div class="chart-container">
+        <canvas id="profitChart"></canvas>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><h3 id="profitTitle">주요 손익 실적 현황</h3></div>
+      <div class="table-container" id="profitTableArea"></div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><h3 id="sgaTitle">판매관리 현황 상세 내역</h3></div>
+      <div class="table-container" id="sgaTableArea"></div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // Chart.js 인스턴스 저장용 변수
+  let profitChartInstance = null;
+
+  function toggleLNB() { document.getElementById('appContainer').classList.toggle('lnb-hidden'); }
+  
+  function toggleEditMode() { 
+    if(!document.getElementById('editToggle').disabled) {
+      document.getElementById('mainContainer').classList.toggle('edit-active', document.getElementById('editToggle').checked);
+    }
+  }
+
+  function toggleViewInputs() {
+    const isYear = document.getElementById('viewType').value === 'year';
+    document.querySelectorAll('.view-month').forEach(el => el.style.display = isYear ? 'none' : 'flex');
+    document.querySelectorAll('.view-year').forEach(el => el.style.display = isYear ? 'flex' : 'none');
+
+    const editToggle = document.getElementById('editToggle');
+    const editLabel = document.getElementById('editToggleLabel');
+    if (isYear) {
+      editToggle.checked = false;
+      editToggle.disabled = true;
+      editLabel.classList.add('disabled');
+      document.getElementById('mainContainer').classList.remove('edit-active');
+    } else {
+      editToggle.disabled = false;
+      editLabel.classList.remove('disabled');
+    }
+  }
+
+  function renderDynamicTables() {
+    const viewType = document.getElementById('viewType').value;
+    let periods = [];
+    
+    if (viewType === 'month') {
+      const start = document.getElementById('startMonth').value;
+      const end = document.getElementById('endMonth').value;
+      let c = new Date(start + "-01"), l = new Date(end + "-01");
+      while(c <= l) { periods.push(c.getFullYear() + "-" + String(c.getMonth() + 1).padStart(2, '0')); c.setMonth(c.getMonth() + 1); }
+      document.getElementById('profitTitle').innerText = "주요 손익 실적 현황 (월별)";
+      document.getElementById('sgaTitle').innerText = "판매관리 현황 상세 내역 (월별)";
+      document.getElementById('chartTitle').innerText = "월별 손익 추이 (매출액 및 영업이익률)";
+    } else {
+      const start = parseInt(document.getElementById('startYear').value);
+      const end = parseInt(document.getElementById('endYear').value);
+      for(let i=start; i<=end; i++) periods.push(i + "년");
+      document.getElementById('profitTitle').innerText = "주요 손익 실적 현황 (연도별 비교)";
+      document.getElementById('sgaTitle').innerText = "판매관리 현황 상세 내역 (연도별 비교)";
+      document.getElementById('chartTitle').innerText = "연도별 손익 추이 (매출액 및 영업이익률)";
+    }
+
+    const multiplier = viewType === 'year' ? 12 : 1; 
+
+    // 데이터 정의
+    const profitItems = [
+      { id: 'sales', label: '매출액', val: 125000 * multiplier },
+      { id: 'cost', label: '매출원가', val: 110000 * multiplier },
+      { id: 'gp', label: '매출총이익', val: 15000 * multiplier, cls: 'highlight-row' },
+      { id: 'gp_rate', label: '매출총이익율', val: 12.0, isRate: true, bold: true },
+      { id: 'sga', label: '판매관리비', val: 8500 * multiplier },
+      { id: 'op', label: '영업이익', val: 6500 * multiplier, cls: 'highlight-row' },
+      { id: 'op_rate', label: '영업이익율', val: 5.2, isRate: true, bold: true }
+    ];
+    
+    // 차트 렌더링을 위한 데이터 수집 배열
+    let chartSalesData = [];
+    let chartOpMarginData = [];
+
+    // [1] 주요 손익 테이블 생성
+    let pHeader = `<thead><tr><th style="width:160px; min-width:160px;" class="sticky-col">항목</th>`;
+    periods.forEach(p => pHeader += `<th style="width:110px; min-width:110px;">${p} 실적</th>`);
+    
+    if (viewType === 'month') {
+      pHeader += `<th style="width:180px; min-width:180px;">누적 실적(달성률)</th><th style="width:140px; min-width:140px;">목표 합계</th></tr></thead>`;
+    } else {
+      pHeader += `<th class="bg-total" style="width:140px; min-width:140px;">기간 평균 실적</th><th class="bg-total" style="width:160px; min-width:160px;">최근년도 증감률(YoY)</th></tr></thead>`;
+    }
+    
+    let pBody = `<tbody>`;
+    profitItems.forEach(item => {
+      const rowStyle = item.bold ? 'font-weight:800; background-color:#f8fafc;' : '';
+      pBody += `<tr class="${item.cls || ''}" style="${rowStyle}"><td class="center bg-total font-bold sticky-col">${item.label}</td>`;
+      
+      let rowSum = 0;
+      let periodVals = [];
+      periods.forEach((p, idx) => {
+        let periodVal = item.isRate ? (item.val + (idx * 0.1)) : (item.val * (1+(idx*0.02)));
+        periodVals.push(periodVal);
+        rowSum += periodVal;
+        
+        // 차트 데이터 적재
+        if (item.id === 'sales') chartSalesData.push(periodVal);
+        if (item.id === 'op_rate') chartOpMarginData.push(periodVal);
+
+        let displayVal = item.isRate ? periodVal.toFixed(1) + "%" : Math.floor(periodVal).toLocaleString();
+        const isReadonly = viewType === 'year' ? 'readonly' : '';
+        pBody += `<td><input type="text" class="table-input" style="${item.bold?'font-weight:800':''}" value="${displayVal}" ${isReadonly}></td>`;
+      });
+
+      if (viewType === 'month') {
+        const targetSum = item.isRate ? (item.val + 1.5) : (item.val * 12);
+        let cumulativeDisplay = item.isRate ? `${(rowSum / periods.length).toFixed(1)}%` : `${Math.floor(rowSum).toLocaleString()} <span class="achieve-rate">(${((rowSum / targetSum) * 100).toFixed(1)}%)</span>`;
+        const targetDisplay = item.isRate ? targetSum.toFixed(1) + "%" : Math.floor(targetSum).toLocaleString();
+        pBody += `<td><div class="right mono">${cumulativeDisplay}</div></td><td><div class="right mono">${targetDisplay}</div></td></tr>`;
+      } else {
+        let avgVal = rowSum / periods.length;
+        let avgDisplay = item.isRate ? avgVal.toFixed(1) + "%" : Math.floor(avgVal).toLocaleString();
+        
+        let yoyDisplay = "-";
+        if (periodVals.length >= 2) {
+          let lastVal = periodVals[periodVals.length - 1];
+          let prevVal = periodVals[periodVals.length - 2];
+          
+          if (item.isRate) {
+            let diff = lastVal - prevVal;
+            let sign = diff > 0 ? "+" : "";
+            yoyDisplay = `<span class="${diff > 0 ? 'text-success' : (diff < 0 ? 'text-danger' : '')}">${sign}${diff.toFixed(1)}%p</span>`;
+          } else {
+            let yoy = ((lastVal / prevVal) - 1) * 100;
+            let sign = yoy > 0 ? "+" : "";
+            yoyDisplay = `<span class="${yoy > 0 ? 'text-success' : (yoy < 0 ? 'text-danger' : '')}">${sign}${yoy.toFixed(1)}%</span>`;
+          }
+        }
+        pBody += `<td><div class="right mono bg-total">${avgDisplay}</div></td><td><div class="right mono bg-total">${yoyDisplay}</div></td></tr>`;
+      }
+    });
+    pBody += `</tbody>`;
+    document.getElementById('profitTableArea').innerHTML = `<table id="profitTable">${pHeader}${pBody}</table>`;
+    initResizable('profitTable');
+
+    // [2] 판매관리 상세 테이블 생성
+    const sgaItems = [{ label: '인건비', val: 12500 * multiplier }, { label: '복리후생비', val: 1200 * multiplier }, { label: '임차료', val: 5000 * multiplier }];
+    let sHeader = `<thead><tr><th style="width:160px; min-width:160px;" class="sticky-col">항목</th>`;
+    periods.forEach(p => sHeader += `<th style="width:110px; min-width:110px;">${p} 실적</th>`);
+    
+    if (viewType === 'month') {
+      sHeader += `<th class="bg-total" style="width:140px; min-width:140px;">집행 누적액</th><th class="bg-total" style="width:140px; min-width:140px;">집행 평균액</th></tr></thead><tbody>`;
+    } else {
+      sHeader += `<th class="bg-total" style="width:140px; min-width:140px;">기간 평균 실적</th><th class="bg-total" style="width:160px; min-width:160px;">최근년도 증감률(YoY)</th></tr></thead><tbody>`;
+    }
+
+    sgaItems.forEach(item => {
+      let total = 0;
+      let sgaVals = [];
+      sHeader += `<tr><td class="center bg-total font-bold sticky-col">${item.label}</td>`;
+      periods.forEach((p, idx) => {
+        let periodVal = item.val * (1+(idx*0.01));
+        sgaVals.push(periodVal);
+        total += periodVal;
+        const isReadonly = viewType === 'year' ? 'readonly' : '';
+        sHeader += `<td><input type="text" class="table-input" value="${Math.floor(periodVal).toLocaleString()}" ${isReadonly}></td>`;
+      });
+      
+      if (viewType === 'month') {
+        sHeader += `<td class="right mono bg-total text-primary">${Math.floor(total).toLocaleString()}</td>`;
+        sHeader += `<td class="right mono bg-total">${Math.floor(total/periods.length).toLocaleString()}</td></tr>`;
+      } else {
+        let avgVal = total / periods.length;
+        let yoyDisplay = "-";
+        if (sgaVals.length >= 2) {
+          let lastVal = sgaVals[sgaVals.length - 1];
+          let prevVal = sgaVals[sgaVals.length - 2];
+          let yoy = ((lastVal / prevVal) - 1) * 100;
+          let sign = yoy > 0 ? "+" : "";
+          yoyDisplay = `<span class="${yoy > 0 ? 'text-danger' : (yoy < 0 ? 'text-success' : '')}">${sign}${yoy.toFixed(1)}%</span>`;
+        }
+        sHeader += `<td class="right mono bg-total">${Math.floor(avgVal).toLocaleString()}</td>`;
+        sHeader += `<td class="right mono bg-total">${yoyDisplay}</td></tr>`;
+      }
+    });
+    sHeader += `</tbody>`;
+    document.getElementById('sgaTableArea').innerHTML = `<table id="sgaTable">${sHeader}</table>`;
+    initResizable('sgaTable');
+
+    // [3] 차트 렌더링 호출
+    renderChart(periods, chartSalesData, chartOpMarginData);
+  }
+
+  function renderChart(labels, salesData, opMarginData) {
+    const ctx = document.getElementById('profitChart').getContext('2d');
+    
+    // 기존 차트가 있으면 삭제 후 다시 그리기
+    if (profitChartInstance) {
+      profitChartInstance.destroy();
+    }
+
+    profitChartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels: labels,
+        datasets: [
+          {
+            type: 'line',
+            label: '영업이익률 (%)',
+            data: opMarginData,
+            borderColor: '#10b981', // Success color
+            backgroundColor: '#10b981',
+            borderWidth: 2,
+            tension: 0.3, // 곡선 처리
+            yAxisID: 'y1'
+          },
+          {
+            type: 'bar',
+            label: '매출액',
+            data: salesData,
+            backgroundColor: 'rgba(31, 94, 255, 0.7)', // Primary color
+            borderColor: '#1f5eff',
+            borderWidth: 1,
+            borderRadius: 4,
+            yAxisID: 'y'
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        plugins: {
+          legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 11, family: 'Pretendard' } } }
+        },
+        scales: {
+          x: { 
+            grid: { display: false },
+            ticks: { font: { family: 'Pretendard', size: 11 } }
+          },
+          y: {
+            type: 'linear', display: true, position: 'left',
+            title: { display: true, text: '매출액', font: { family: 'Pretendard', size: 10 } },
+            ticks: { font: { family: 'Pretendard', size: 10 } }
+          },
+          y1: {
+            type: 'linear', display: true, position: 'right',
+            grid: { drawOnChartArea: false }, // 매출액 격자선과 겹치지 않게 처리
+            title: { display: true, text: '이익률 (%)', font: { family: 'Pretendard', size: 10 } },
+            ticks: { font: { family: 'Pretendard', size: 10 } }
+          }
+        }
+      }
+    });
+  }
+
+  function initResizable(tableId) {
+    const table = document.getElementById(tableId);
+    if (!table) return;
+    table.querySelectorAll('th').forEach(col => {
+      const resizer = document.createElement('div');
+      resizer.className = 'resizer';
+      col.appendChild(resizer);
+      resizer.addEventListener('mousedown', function(e) {
+        const startX = e.pageX;
+        const startWidth = col.offsetWidth;
+        const onMouseMove = (e) => {
+          const width = startWidth + (e.pageX - startX);
+          if (width > 60) {
+            col.style.width = width + 'px';
+            col.style.minWidth = width + 'px';
+          }
+        };
+        const onMouseUp = () => {
+          document.removeEventListener('mousemove', onMouseMove);
+          document.removeEventListener('mouseup', onMouseUp);
+        };
+        document.addEventListener('mousemove', onMouseMove);
+        document.addEventListener('mouseup', onMouseUp);
+      });
+    });
+  }
+
+  function downloadExcel() {
+    const wb = XLSX.utils.book_new();
+    document.querySelectorAll('table').forEach((table, idx) => {
+      const ws = XLSX.utils.table_to_sheet(table);
+      XLSX.utils.book_append_sheet(wb, ws, `Sheet${idx + 1}`);
+    });
+    XLSX.writeFile(wb, `Etevers_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+
+  function handleFileUpload(event) {
+    const file = event.target.files[0];
+    if (file) { alert(`${file.name} 업로드 완료`); renderDynamicTables(); }
+  }
+
+  window.onload = renderDynamicTables;
+</script>
+</body>
+</html>
