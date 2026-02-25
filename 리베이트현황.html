@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>리베이트 분석 시스템 (v1.3.99)</title>
+  <title>리베이트 분석 시스템 (v1.4.00)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     /* --- 디자인 시스템 --- */
@@ -36,33 +36,17 @@
 
     main{ grid-area:body; padding:20px; overflow-y:auto; min-width: 0; }
     
-    .edit-mode-toggle { 
-      height: 36px; padding: 0 12px; border-radius: 6px; 
-      border: 1px solid var(--border); background: #fff; 
-      display: inline-flex; align-items: center; gap: 8px; 
-      cursor: pointer; transition: 0.2s; 
-    }
+    .edit-mode-toggle { height: 36px; padding: 0 12px; border-radius: 6px; border: 1px solid var(--border); background: #fff; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: 0.2s; }
     .edit-mode-toggle span { font-size: 11px; font-weight: 600; color: var(--text); }
     .edit-mode-toggle input { cursor: pointer; margin: 0; width: 14px; height: 14px; }
     .edit-mode-toggle.active { background: #eff6ff; border-color: var(--primary); }
     .edit-mode-toggle.active span { color: var(--primary); }
 
-    .table-input { 
-      width: 100%; border: 1px solid transparent; background: transparent; 
-      text-align: center; padding: 4px 8px; font-family: inherit; 
-      font-size: 11px; color: inherit; border-radius: 6px; 
-      pointer-events: none; outline: none; appearance: none;
-    }
+    .table-input { width: 100%; border: 1px solid transparent; background: transparent; text-align: center; padding: 4px 8px; font-family: inherit; font-size: 11px; color: inherit; border-radius: 6px; pointer-events: none; outline: none; appearance: none; }
     .table-input.right { text-align: right !important; }
     
-    .edit-active .table-input { 
-      pointer-events: auto; border: 1px solid #cbd5e1; background: #ffffff; 
-      box-shadow: 0 1px 2px rgba(0,0,0,0.05);
-    }
-    .edit-active select.table-input {
-      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%236b7280' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");
-      background-repeat: no-repeat; background-position: right 10px center; padding-right: 24px;
-    }
+    .edit-active .table-input { pointer-events: auto; border: 1px solid #cbd5e1; background: #ffffff; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
+    .edit-active select.table-input { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%236b7280' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 10px center; padding-right: 24px; }
     .edit-active .editable-cell { background-color: #fffbeb !important; }
 
     .data-row { cursor: pointer; transition: background 0.2s; }
@@ -109,7 +93,7 @@
   <header>
     <div class="brand-wrap">
       <button class="menu-toggle" onclick="toggleLNB()">&#9776;</button>
-      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.99</span></div>
+      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.4.00</span></div>
     </div>
     <div class="user"><strong style="font-size:12px">비즈니스기획팀 강형구 님</strong></div>
   </header>
@@ -223,11 +207,7 @@
     document.getElementById('editToggleLabel').classList.toggle('active', isEdit);
   }
 
-  function saveData() {
-    alert('저장되었습니다.');
-    const editToggle = document.getElementById('editToggle');
-    if (editToggle.checked) { editToggle.checked = false; toggleEditMode(); }
-  }
+  function saveData() { alert('저장되었습니다.'); const editToggle = document.getElementById('editToggle'); if (editToggle.checked) { editToggle.checked = false; toggleEditMode(); } }
 
   function selectRow(row) {
     if (selectedRow) selectedRow.classList.remove('selected');
@@ -238,18 +218,12 @@
   function initResizable() {
     document.querySelectorAll('th').forEach(col => {
       if (!col.querySelector('.resizer')) {
-        const resizer = document.createElement('div');
-        resizer.className = 'resizer';
-        col.appendChild(resizer);
+        const resizer = document.createElement('div'); resizer.className = 'resizer'; col.appendChild(resizer);
         resizer.addEventListener('mousedown', function(e) {
           const startX = e.pageX; const startWidth = col.offsetWidth;
-          const onMouseMove = (e) => {
-            const width = startWidth + (e.pageX - startX);
-            if (width > 60) { col.style.width = width + 'px'; col.style.minWidth = width + 'px'; }
-          };
+          const onMouseMove = (e) => { const width = startWidth + (e.pageX - startX); if (width > 60) { col.style.width = width + 'px'; col.style.minWidth = width + 'px'; } };
           const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); };
-          document.addEventListener('mousemove', onMouseMove);
-          document.addEventListener('mouseup', onMouseUp);
+          document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
         });
       }
     });
@@ -263,9 +237,7 @@
     labelTd.setAttribute('rowspan', parseInt(labelTd.getAttribute('rowspan')) + 1);
 
     const newRow = document.createElement('tr');
-    newRow.className = "data-row";
-    newRow.setAttribute('data-month', month);
-    newRow.onclick = function() { selectRow(this); };
+    newRow.className = "data-row"; newRow.setAttribute('data-month', month); newRow.onclick = function() { selectRow(this); };
     newRow.innerHTML = `
       <td class="editable-cell"><select class="table-input"><option value="sell-In">sell-In</option><option value="sell-Thru">sell-Thru</option><option value="Sell-out">Sell-out</option><option value="MDF">MDF</option></select></td>
       <td class="editable-cell"><input type="text" class="table-input" value="신규 프로그램"></td>
@@ -277,79 +249,69 @@
       <td class="right mono row-balance">0</td>
     `;
     selectedRow.parentNode.insertBefore(newRow, selectedRow.nextSibling);
-    const editToggle = document.getElementById('editToggle');
-    if (!editToggle.checked) { editToggle.checked = true; toggleEditMode(); }
-    calcAll();
-    selectRow(newRow);
+    const editToggle = document.getElementById('editToggle'); if (!editToggle.checked) { editToggle.checked = true; toggleEditMode(); }
+    calcAll(); selectRow(newRow);
   }
 
   function deleteRow() {
     if (!selectedRow) { alert('삭제할 행을 먼저 마우스로 선택해주세요.'); return; }
     const month = selectedRow.getAttribute('data-month');
     const monthRows = document.querySelectorAll(`.data-row[data-month="${month}"]`);
-    if (monthRows.length <= 1) { alert("해당 월의 마지막 데이터 행은 삭제할 수 없습니다."); return; }
+    if (monthRows.length <= 1) { alert("해당 월의 마지막 데이터 행은 삭제할 수 없습니다. '월 삭제' 기능을 이용하세요."); return; }
     if (!confirm("선택한 행을 삭제하시겠습니까?")) return;
 
     if (selectedRow.querySelector('.month-label')) {
-        const nextRow = selectedRow.nextSibling;
-        const labelTd = selectedRow.querySelector('.month-label');
-        labelTd.setAttribute('rowspan', parseInt(labelTd.getAttribute('rowspan')) - 1);
-        nextRow.insertBefore(labelTd, nextRow.firstChild);
+        const nextRow = selectedRow.nextSibling; const labelTd = selectedRow.querySelector('.month-label');
+        labelTd.setAttribute('rowspan', parseInt(labelTd.getAttribute('rowspan')) - 1); nextRow.insertBefore(labelTd, nextRow.firstChild);
     } else {
-        const firstRow = monthRows[0];
-        const labelTd = firstRow.querySelector('.month-label');
-        labelTd.setAttribute('rowspan', parseInt(labelTd.getAttribute('rowspan')) - 1);
+        const firstRow = monthRows[0]; const labelTd = firstRow.querySelector('.month-label'); labelTd.setAttribute('rowspan', parseInt(labelTd.getAttribute('rowspan')) - 1);
     }
-    selectedRow.parentNode.removeChild(selectedRow);
-    selectedRow = null;
-    calcAll();
+    selectedRow.parentNode.removeChild(selectedRow); selectedRow = null; calcAll();
   }
 
-  // [기능 추가] 월 삭제 기능
+  // [수정] 선택한 행의 월을 삭제하는 기능
   function deleteMonth() {
+    if (!selectedRow) { alert("삭제하려는 월의 데이터 행을 먼저 마우스로 선택해주세요."); return; }
+
     const tbody = document.getElementById('rebateBody');
-    const allSubtotalRows = tbody.querySelectorAll('.subtotal-row');
+    const monthId = selectedRow.getAttribute('data-month');
     
-    if (allSubtotalRows.length === 0) {
-      alert("삭제할 월 데이터가 없습니다.");
-      return;
-    }
+    // 월 표시 텍스트 추출 (예: 2025년 10월)
+    const monthLabelRow = document.querySelector(`.data-row[data-month="${monthId}"]`);
+    const labelText = monthLabelRow ? monthLabelRow.querySelector('.month-label').innerText : monthId;
 
-    if (!confirm("가장 최근에 추가된 월의 모든 데이터와 소계가 삭제됩니다. 계속하시겠습니까?")) return;
+    if (!confirm(`선택하신 [${labelText}]의 모든 데이터와 소계가 삭제됩니다. 계속하시겠습니까?`)) return;
 
-    const lastSubRow = allSubtotalRows[allSubtotalRows.length - 1];
-    const monthId = lastSubRow.getAttribute('data-month');
     const dataRows = tbody.querySelectorAll(`.data-row[data-month="${monthId}"]`);
+    const subtotalRow = tbody.querySelector(`.subtotal-row[data-month="${monthId}"]`);
 
-    // 해당 월의 데이터 행들과 소계 행 삭제
+    // 데이터 행 및 소계 행 삭제
     dataRows.forEach(row => tbody.removeChild(row));
-    tbody.removeChild(lastSubRow);
+    if (subtotalRow) tbody.removeChild(subtotalRow);
 
-    // 연도 구분선만 남았을 경우 처리
-    const remainingRows = tbody.children;
-    if (remainingRows.length > 0 && remainingRows[remainingRows.length - 1].classList.contains('year-divider')) {
-        tbody.removeChild(remainingRows[remainingRows.length - 1]);
+    // 연도 구분선만 남았을 경우 (해당 연도에 더 이상 월 데이터가 없을 때) 처리
+    const allRows = Array.from(tbody.children);
+    for (let i = 0; i < allRows.length; i++) {
+        if (allRows[i].classList.contains('year-divider')) {
+            const nextRow = allRows[i + 1];
+            // 구분선 다음 행이 없거나 또 다른 구분선인 경우 현재 구분선 삭제
+            if (!nextRow || nextRow.classList.contains('year-divider')) {
+                tbody.removeChild(allRows[i]);
+            }
+        }
     }
 
-    calcAll();
     selectedRow = null;
+    calcAll();
   }
 
   function addMonth() {
     const rawValue = prompt("추가할 월을 입력하세요 (예: 2026-01)", "");
     if(!rawValue || !/^\d{4}-\d{2}$/.test(rawValue)) { alert("형식이 올바르지 않습니다 (YYYY-MM)"); return; }
-    
-    const [year, month] = rawValue.split('-');
-    const labelName = `${year}년 ${parseInt(month)}월`;
-    const tbody = document.getElementById('rebateBody');
-
-    const dividers = [...document.querySelectorAll('.year-divider')];
-    const lastDivider = dividers.pop();
+    const [year, month] = rawValue.split('-'); const labelName = `${year}년 ${parseInt(month)}월`; const tbody = document.getElementById('rebateBody');
+    const dividers = [...document.querySelectorAll('.year-divider')]; const lastDivider = dividers.pop();
     const lastYearStr = lastDivider ? lastDivider.innerText.trim() : "";
-    if (lastYearStr !== `${year}년`) {
-        tbody.insertAdjacentHTML('beforeend', `<tr class="year-divider"><td colspan="11" class="center">${year}년</td></tr>`);
-    }
-
+    if (lastYearStr !== `${year}년`) { tbody.insertAdjacentHTML('beforeend', `<tr class="year-divider"><td colspan="11" class="center">${year}년</td></tr>`); }
     const html = `
       <tr class="data-row" data-month="${rawValue}" onclick="selectRow(this)">
         <td rowspan="2" class="sticky-col center month-label">${labelName}</td>
@@ -368,50 +330,37 @@
         <td class="right mono">0</td><td class="right mono m-total-pay">0</td><td colspan="2"></td><td class="right mono m-total-bal">0</td>
       </tr>
     `;
-    tbody.insertAdjacentHTML('beforeend', html);
-    calcAll();
+    tbody.insertAdjacentHTML('beforeend', html); calcAll();
   }
 
   function calcAll() {
-    const rows = document.querySelectorAll('.data-row');
-    const months = [...new Set([...rows].map(r => r.getAttribute('data-month')))];
+    const rows = document.querySelectorAll('.data-row'); const months = [...new Set([...rows].map(r => r.getAttribute('data-month')))];
     let grandA=0, grandB=0, grandPay=0;
     months.forEach(m => {
       const monthRows = document.querySelectorAll(`.data-row[data-month="${m}"]`);
       let mA=0, mB=0, mPay=0;
       monthRows.forEach(row => {
-        const a = parseInt(row.querySelector('.val-a').value.replace(/,/g, '')) || 0;
-        const b = parseInt(row.querySelector('.val-b').value.replace(/,/g, '')) || 0;
-        const pay = parseInt(row.querySelector('.val-pay').value.replace(/,/g, '')) || 0;
-        const ab = a + b; const bal = ab - pay;
-        row.querySelector('.row-ab').innerText = ab.toLocaleString();
-        row.querySelector('.row-balance').innerText = bal.toLocaleString();
+        const a = parseInt(row.querySelector('.val-a').value.replace(/,/g, '')) || 0; const b = parseInt(row.querySelector('.val-b').value.replace(/,/g, '')) || 0;
+        const pay = parseInt(row.querySelector('.val-pay').value.replace(/,/g, '')) || 0; const ab = a + b; const bal = ab - pay;
+        row.querySelector('.row-ab').innerText = ab.toLocaleString(); row.querySelector('.row-balance').innerText = bal.toLocaleString();
         mA += a; mB += b; mPay += pay;
       });
       const subRow = document.querySelector(`.subtotal-row[data-month="${m}"]`);
       if(subRow) {
         const mAB = mA + mB; const mBal = mAB - mPay;
-        subRow.querySelector('.m-total-a').innerText = mA.toLocaleString();
-        subRow.querySelector('.m-total-b').innerText = mB.toLocaleString();
-        subRow.querySelector('.m-total-ab').innerText = mAB.toLocaleString();
-        subRow.querySelector('.m-total-pay').innerText = mPay.toLocaleString();
+        subRow.querySelector('.m-total-a').innerText = mA.toLocaleString(); subRow.querySelector('.m-total-b').innerText = mB.toLocaleString();
+        subRow.querySelector('.m-total-ab').innerText = mAB.toLocaleString(); subRow.querySelector('.m-total-pay').innerText = mPay.toLocaleString();
         subRow.querySelector('.m-total-bal').innerText = mBal.toLocaleString();
       }
       grandA += mA; grandB += mB; grandPay += mPay;
     });
     const gAB = grandA + grandB; const gBal = gAB - grandPay;
-    document.getElementById('totalA').innerText = grandA.toLocaleString();
-    document.getElementById('totalB').innerText = grandB.toLocaleString();
-    document.getElementById('totalAB').innerText = gAB.toLocaleString();
-    document.getElementById('totalPay').innerText = grandPay.toLocaleString();
+    document.getElementById('totalA').innerText = grandA.toLocaleString(); document.getElementById('totalB').innerText = grandB.toLocaleString();
+    document.getElementById('totalAB').innerText = gAB.toLocaleString(); document.getElementById('totalPay').innerText = grandPay.toLocaleString();
     document.getElementById('totalBal').innerText = gBal.toLocaleString();
   }
 
-  function downloadExcel() {
-    const table = document.getElementById('rebateTable');
-    const wb = XLSX.utils.table_to_book(table, {sheet: "리베이트 현황"});
-    XLSX.writeFile(wb, `Etevers_Rebate_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
-  }
+  function downloadExcel() { const table = document.getElementById('rebateTable'); const wb = XLSX.utils.table_to_book(table, {sheet: "리베이트 현황"}); XLSX.writeFile(wb, `Etevers_Rebate_Report_${new Date().toISOString().slice(0,10)}.xlsx`); }
 
   window.onload = function() { calcAll(); initResizable(); };
 </script>
