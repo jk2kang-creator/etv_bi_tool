@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>에티버스이비티 주요 지표 현황 (v1.3.29)</title>
+  
+  <style>
+    /* --- v1.3.11~27 Design System --- */
+    :root{
+      --bg:#f5f7fb; --card:#ffffff; --text:#1f2a37; --muted:#6b7280; --border:#e5e7eb;
+      --primary:#1f5eff; --primary-2:#0b4bd6; --danger:#e11d48; --success:#10b981;
+      --radius: 14px;
+      --font: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Noto Sans KR", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{ margin:0; background:var(--bg); color:var(--text); font-family:var(--font); -webkit-font-smoothing: antialiased; }
+
+    .app{ min-height:100vh; display:grid; grid-template-columns: 260px 1fr; grid-template-rows: 64px 1fr; grid-template-areas: "head head" "lnb body"; }
+    header{ grid-area:head; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#0f2342; color:#fff; position:sticky; top:0; z-index:100; }
+    .brand{ display:flex; align-items:center; gap:12px; font-weight:800; font-size:18px; letter-spacing:-.5px; }
+    .pill { background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:6px; font-size:11px; font-weight:400; margin-left:8px; border:1px solid rgba(255,255,255,0.2); }
+    
+    nav{ grid-area:lnb; padding:20px; border-right:1px solid var(--border); background:#fff; position:sticky; top:64px; height:calc(100vh - 64px); overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
+    .lnb-title { font-size:11px; color:#94a3b8; font-weight:700; margin:10px 0 5px 12px; text-transform:uppercase; }
+    .lnb-item{ display:flex; align-items:center; gap:12px; padding:12px; border-radius:12px; cursor:pointer; color:#475569; transition:0.2s; text-decoration: none; }
+    .lnb-item.active{ background:#eff6ff; color:#2563eb; font-weight:700; }
+    .lnb-ico{ font-size:18px; width:24px; text-align:center; }
+    .lnb-sub{ font-size:11px; color:#94a3b8; margin-top:2px; font-weight:400; }
+    .lnb-divider { height:1px; background:var(--border); margin:10px 0; }
+
+    main{ grid-area:body; padding:24px; max-width:1600px; overflow-y:auto; }
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding:20px; margin-bottom:20px; }
+    .card .hd{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+    .card .hd h3{ margin:0; font-size:16px; font-weight:700; color:#1e293b; }
+
+    .top-actions { display:flex; align-items:center; gap:10px; }
+    .last-update { text-align: right; margin-right: 5px; }
+    .last-update div:first-child { font-size: 10px; color: #94a3b8; }
+    .last-update div:last-child { font-size: 12px; font-weight: 700; color: #475569; }
+
+    .controls{ display:grid; grid-template-columns: repeat(5, 1fr) 120px; gap:16px; align-items:end; }
+    .field{ display:flex; flex-direction:column; gap:6px; }
+    label{ font-size:12px; font-weight:600; color:var(--muted); }
+    input, select{ height:40px; border-radius:8px; border:1px solid var(--border); padding:0 12px; font-size:13px; outline:none; background:#fff; }
+
+    .btn{ height:32px; padding:0 12px; border-radius:8px; border:1px solid var(--border); font-weight:600; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:0.2s; justify-content: center; }
+    .btn.primary{ background:var(--primary); color:#fff; height: 40px; border:none; }
+    .btn.success { background:var(--success); color:#fff; border:none; }
+    
+    .table-container{ overflow-x:auto; border:1px solid var(--border); border-radius:10px; background: #fff; margin-bottom: 10px; position: relative; }
+    table{ width: 100%; border-collapse:collapse; font-size:12.5px; table-layout: fixed; min-width: 1400px; }
+    th{ position:sticky; top:0; background:#f8fafc; padding:12px; border:1px solid var(--border); z-index: 10; text-align:center; color:#64748b; position: relative; }
+    td{ padding:10px 12px; border:1px solid var(--border); color:#334155; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    
+    .resizer { position: absolute; top: 0; right: 0; width: 5px; cursor: col-resize; user-select: none; height: 100%; z-index: 15; }
+    .resizer:hover, .resizing { border-right: 2px solid var(--primary); }
+
+    .right{ text-align:right; } .center{ text-align:center; } .mono{ font-family:'Courier New', monospace; font-weight:600; }
+    .bg-total { background-color: #f1f5f9 !important; font-weight: 800; }
+    .highlight-row { background-color: #fffbeb !important; font-weight: 700; }
+    .text-danger { color: var(--danger); font-weight: 700; }
+    .text-success { color: var(--success); font-weight: 700; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="brand">📊 에티버스이비티 주요 지표 현황 <span class="pill">v1.3.29</span></div>
+    <div class="user"><strong style="font-size:13px">Admin</strong></div>
+  </header>
+
+  <nav>
+    <div class="lnb-title">EBT Management</div>
+    <div class="lnb-item"><div class="lnb-ico">📉</div><div><div>손익현황</div><div class="lnb-sub">전사 분석</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">🎯</div><div><div>목표현황</div><div class="lnb-sub">목표달성율</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">💰</div><div><div>매출현황</div><div class="lnb-sub">출하완료 기준</div></div></div>
+    <div class="lnb-item active"><div class="lnb-ico">📦</div><div><div>재고현황</div><div class="lnb-sub">재고 분석</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">🧾</div><div><div>미수금현황</div><div class="lnb-sub">Phase 2</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">📄</div><div><div>미발행현황</div><div class="lnb-sub">세금계산서</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">🏦</div><div><div>운전자금현황</div><div class="lnb-sub">Cash Flow</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">🏷️</div><div><div>리베이트 현황</div><div class="lnb-sub">Vendor Rebate</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">↩️</div><div><div>반품이력조회</div><div class="lnb-sub">Return History</div></div></div>
+    <div class="lnb-divider"></div>
+    <div class="lnb-item"><div class="lnb-ico">⚙️</div><div><div>관리자 설정</div><div class="lnb-sub">System</div></div></div>
+  </nav>
+
+  <main>
+    <div class="card">
+      <div class="hd">
+        <h3>재고현황 분석</h3>
+        <div class="top-actions">
+          <div class="last-update"><div>마지막 업로드:</div><div>2026-02-04 14:19</div></div>
+          <button class="btn" onclick="document.getElementById('fileInput').click()">⬆️ 엑셀 업로드</button>
+          <button class="btn success" onclick="alert('통합 리포트 다운로드를 시작합니다.')">📥 통합 엑셀 다운로드</button>
+          <input type="file" id="fileInput" style="display:none">
+        </div>
+      </div>
+      <div class="controls">
+        <div class="field"><label>시작 월</label><input type="month" value="2025-10"></div>
+        <div class="field"><label>종료 월 (기준)</label><input type="month" value="2025-12"></div>
+        <div class="field"><label>본부</label><select><option>전체</option></select></div>
+        <div class="field"><label>부서</label><select><option>전체</option></select></div>
+        <div class="field"><label>벤더</label><select><option>전체</option></select></div>
+        <button class="btn primary">🔎 조회</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><h3>최근 3개월 재고 현황</h3></div>
+      <div class="table-container">
+        <table class="resizable-table">
+          <thead>
+            <tr>
+              <th colspan="2" style="width:160px">구분</th>
+              <th class="bg-total">총합계</th>
+              <th>총괄_C&S</th>
+              <th>총괄_AIDC</th>
+              <th>SG_Device</th>
+              <th>SG_부산지사</th>
+              <th>PS</th>
+              <th>ONP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td rowspan="3" class="center bg-total">12월말 재고</td>
+              <td class="center">총재고</td>
+              <td class="right mono">35,708</td>
+              <td class="right mono">3,118</td>
+              <td class="right mono">1,185</td>
+              <td class="right mono">7,960</td>
+              <td class="right mono">323</td>
+              <td class="right mono">6,439</td>
+              <td class="right mono">5,573</td>
+            </tr>
+            <tr>
+              <td class="center">장기재고</td>
+              <td class="right mono text-danger">11,063</td>
+              <td class="right mono">518</td>
+              <td class="right mono">736</td>
+              <td class="right mono">1,663</td>
+              <td class="right mono">31</td>
+              <td class="right mono">1,207</td>
+              <td class="right mono">4,530</td>
+            </tr>
+            <tr class="bg-total">
+              <td class="center">장기재고율</td>
+              <td class="right mono">31%</td>
+              <td class="right mono">17%</td>
+              <td class="right mono">62%</td>
+              <td class="right mono">21%</td>
+              <td class="right mono">10%</td>
+              <td class="right mono">19%</td>
+              <td class="right mono">81%</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><h3>부서별 재고 요약 (12월말 기준)</h3></div>
+      <div class="table-container">
+        <table class="resizable-table">
+          <thead>
+            <tr>
+              <th style="width:140px">구분</th>
+              <th class="bg-total">총합계</th>
+              <th>총괄_C&S</th>
+              <th>총괄_AIDC</th>
+              <th>SG_Device</th>
+              <th>PS</th>
+              <th>ONP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="center">총재고</td>
+              <td class="right mono bg-total">35,708</td>
+              <td class="right mono">3,118</td>
+              <td class="right mono">1,185</td>
+              <td class="right mono">7,960</td>
+              <td class="right mono">6,439</td>
+              <td class="right mono">5,573</td>
+            </tr>
+            <tr>
+              <td class="center text-success">정상재고</td>
+              <td class="right mono text-success bg-total">24,645</td>
+              <td class="right mono">2,600</td>
+              <td class="right mono">449</td>
+              <td class="right mono">6,297</td>
+              <td class="right mono">5,232</td>
+              <td class="right mono">1,043</td>
+            </tr>
+            <tr class="highlight-row">
+              <td class="center text-danger">장기재고</td>
+              <td class="right mono bg-total">11,063</td>
+              <td class="right mono">518</td>
+              <td class="right mono">736</td>
+              <td class="right mono">1,663</td>
+              <td class="right mono">1,207</td>
+              <td class="right mono">4,530</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd"><h3>월별 장기재고 상세 현황 (누적)</h3></div>
+      <div class="table-container">
+        <table class="resizable-table">
+          <thead>
+            <tr>
+              <th style="width:180px">발생월 / 부서</th>
+              <th>총괄_C&S</th>
+              <th>총괄_AIDC</th>
+              <th>SG_Device</th>
+              <th>PS</th>
+              <th>ONP</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="center bg-total">2025/12</td>
+              <td class="right mono">1,050</td>
+              <td class="right mono">161</td>
+              <td class="right mono">2,503</td>
+              <td class="right mono">2,575</td>
+              <td class="right mono">-</td>
+            </tr>
+            <tr>
+              <td class="center bg-total">2025/11</td>
+              <td class="right mono">637</td>
+              <td class="right mono">131</td>
+              <td class="right mono">1,471</td>
+              <td class="right mono">1,078</td>
+              <td class="right mono">15</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  function initResizable() {
+    document.querySelectorAll('.resizable-table').forEach(table => {
+      table.querySelectorAll('th').forEach(col => {
+        if (col.querySelector('.resizer')) return;
+        const resizer = document.createElement('div');
+        resizer.className = 'resizer';
+        col.appendChild(resizer);
+        let startX, startWidth;
+        resizer.addEventListener('mousedown', e => {
+          startX = e.pageX; startWidth = col.offsetWidth;
+          resizer.classList.add('resizing');
+          const onMouseMove = e => {
+            const width = startWidth + (e.pageX - startX);
+            if (width > 50) col.style.width = width + 'px';
+          };
+          const onMouseUp = () => {
+            resizer.classList.remove('resizing');
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+          };
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+      });
+    });
+  }
+  window.onload = initResizable;
+</script>
+</body>
+</html>

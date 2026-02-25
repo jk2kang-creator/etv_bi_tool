@@ -1,0 +1,261 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>에티버스이비티 주요 지표 현황 (v1.3.28)</title>
+  
+  <style>
+    /* --- v1.3.11~27 Design System --- */
+    :root{
+      --bg:#f5f7fb; --card:#ffffff; --text:#1f2a37; --muted:#6b7280; --border:#e5e7eb;
+      --primary:#1f5eff; --primary-2:#0b4bd6; --danger:#e11d48; --success:#10b981;
+      --radius: 14px;
+      --font: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Noto Sans KR", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{ margin:0; background:var(--bg); color:var(--text); font-family:var(--font); -webkit-font-smoothing: antialiased; }
+
+    .app{ min-height:100vh; display:grid; grid-template-columns: 260px 1fr; grid-template-rows: 64px 1fr; grid-template-areas: "head head" "lnb body"; }
+    header{ grid-area:head; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#0f2342; color:#fff; position:sticky; top:0; z-index:100; }
+    .brand{ display:flex; align-items:center; gap:12px; font-weight:800; font-size:18px; letter-spacing:-.5px; }
+    
+    nav{ grid-area:lnb; padding:20px; border-right:1px solid var(--border); background:#fff; position:sticky; top:64px; height:calc(100vh - 64px); overflow-y:auto; display:flex; flex-direction:column; gap:6px; }
+    .lnb-item{ display:flex; align-items:center; gap:12px; padding:12px; border-radius:12px; cursor:pointer; color:#475569; transition:0.2s; text-decoration: none; }
+    .lnb-item.active{ background:#eff6ff; color:#2563eb; font-weight:700; }
+    .lnb-ico{ font-size:18px; width:24px; text-align:center; }
+    .lnb-sub{ font-size:11px; color:#94a3b8; margin-top:2px; font-weight:400; }
+
+    main{ grid-area:body; padding:24px; max-width:1600px; overflow-y:auto; }
+    .card{ background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); padding:20px; margin-bottom:20px; }
+    .card .hd{ display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; padding-bottom:12px; border-bottom:1px solid var(--border); }
+    .card .hd h3{ margin:0; font-size:16px; font-weight:700; color:#1e293b; }
+
+    .controls{ display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:16px; align-items:end; }
+    .field{ display:flex; flex-direction:column; gap:6px; }
+    label{ font-size:12px; font-weight:600; color:var(--muted); }
+    input, select{ height:40px; border-radius:8px; border:1px solid var(--border); padding:0 12px; font-size:13px; outline:none; background:#fff; }
+
+    .top-actions { display:flex; align-items:center; gap:8px; position:relative; }
+    .btn{ height:32px; padding:0 12px; border-radius:8px; border:none; font-weight:600; font-size:12px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:0.2s; justify-content: center; }
+    .btn.primary{ background:var(--primary); color:#fff; height: 40px; }
+    .btn.ghost{ background:#fff; border:1px solid var(--border); color:#333; }
+    .btn.success { background:var(--success); color:#fff; }
+    
+    .edit-switch { display:flex; align-items:center; gap:6px; padding:0 10px; height:32px; border-radius:8px; background:#f1f5f9; border:1px solid var(--border); cursor:pointer; }
+    .edit-switch input { width:14px; height:14px; margin:0; cursor:pointer; }
+    .edit-switch span { font-size:12px; font-weight:700; color:var(--primary); }
+
+    .table-container{ overflow-x:auto; border:1px solid var(--border); border-radius:10px; background: #fff; }
+    table{ width: 100%; border-collapse:collapse; font-size:12.5px; table-layout: fixed; min-width: 1200px; }
+    th{ position:sticky; top:0; background:#f8fafc; padding:12px; border:1px solid var(--border); z-index: 10; text-align:center; color:#64748b; position:relative; }
+    td{ padding:10px 12px; border:1px solid var(--border); color:#334155; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    
+    .resizer { position: absolute; top: 0; right: 0; width: 4px; cursor: col-resize; user-select: none; height: 100%; z-index: 15; }
+    .resizer:hover, .resizing { border-right: 2px solid var(--primary); }
+
+    .right{ text-align:right; } .mono{ font-family:'Courier New', monospace; font-weight:600; }
+    .pos{ color:var(--success); font-weight:700; } .neg{ color:var(--danger); font-weight:700; }
+    .bg-total { background-color: #f1f5f9 !important; font-weight: 800; }
+    
+    #colMenu{ position:absolute; top:40px; right:0; background:#fff; border:1px solid var(--border); padding:10px; border-radius:10px; box-shadow:0 10px 15px -3px rgba(0,0,0,0.1); display:none; z-index:110; min-width:160px; }
+    #colMenu.show{ display:block; }
+    .edit-input { width: 100%; height: 28px; border: 1px solid var(--primary); border-radius: 4px; text-align: right; font-weight: 700; color: var(--primary); background: #fff; }
+    .editable-cell { background-color: #fffbeb !important; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <header>
+    <div class="brand">📊 에티버스이비티 주요 지표 현황 <span class="pill">v1.3.28</span></div>
+    <div class="user"><strong style="font-size:13px">Admin</strong></div>
+  </header>
+
+  <nav>
+    <div class="lnb-title">EBT Management</div>
+    <div class="lnb-item"><div class="lnb-ico">📉</div><div><div>손익현황</div><div class="lnb-sub">전사 분석</div></div></div>
+    <div class="lnb-item active"><div class="lnb-ico">🎯</div><div><div>목표현황</div><div class="lnb-sub">목표달성율</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">💰</div><div><div>매출현황</div><div class="lnb-sub">출하완료 기준</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">📦</div><div><div>재고현황</div><div class="lnb-sub">Phase 2</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">🧾</div><div><div>미수금현황</div><div class="lnb-sub">Phase 2</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">📄</div><div><div>미발행현황</div><div class="lnb-sub">세금계산서</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">🏦</div><div><div>운전자금현황</div><div class="lnb-sub">Cash Flow</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">🏷️</div><div><div>리베이트 현황</div><div class="lnb-sub">Vendor Rebate</div></div></div>
+    <div class="lnb-item"><div class="lnb-ico">↩️</div><div><div>반품이력조회</div><div class="lnb-sub">Return History</div></div></div>
+    <div class="lnb-divider"></div>
+    <div class="lnb-item"><div class="lnb-ico">⚙️</div><div><div>관리자 설정</div><div class="lnb-sub">System</div></div></div>
+  </nav>
+
+  <main>
+    <div class="card">
+      <div class="hd"><h3>목표현황 분석</h3></div>
+      <div class="controls">
+        <div class="field"><label>시작 월</label><input type="month" id="f_from" value="2026-01"></div>
+        <div class="field"><label>종료 월 (기준)</label><input type="month" id="f_to" value="2026-02"></div>
+        <div class="field"><label>본부</label><select id="f_hq" onchange="updateDeptFilter()"><option value="ALL">전체 본부</option><option>유통본부</option><option>솔루션본부</option></select></div>
+        <div class="field"><label>부서</label><select id="f_dept"><option value="ALL">전체 부서</option></select></div>
+        <button class="btn primary" onclick="renderTargetTable()">🔎 조회</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="hd">
+        <h3>조회 결과</h3>
+        <div class="top-actions">
+          <button class="btn ghost" id="addMonthBtn" style="display:none;" onclick="addNewMonth()">📅 월 추가</button>
+          <label class="edit-switch">
+            <input type="checkbox" id="editModeToggle" onchange="handleEditMode()">
+            <span>수정 모드</span>
+          </label>
+          <button class="btn success" id="saveBtn" style="display:none;" onclick="saveData()">💾 저장</button>
+          <button class="btn ghost" onclick="toggleColMenu()">🧩 컬럼 선택</button>
+          <div id="colMenu"></div>
+        </div>
+      </div>
+      <div class="table-container">
+        <table id="targetTable">
+          <thead id="targetHead"></thead>
+          <tbody id="targetBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  let activeMonths = ["2026-01", "2026-02"];
+  const columns = [
+    { key: "target", label: "목표액", show: true, width: 120 },
+    { key: "sales", label: "매출액", show: true, width: 120 },
+    { key: "achieve", label: "달성률", show: true, width: 80 },
+    { key: "margin", label: "마진", show: true, width: 110 },
+    { key: "margin_rate", label: "마진율", show: true, width: 80 }
+  ];
+
+  let currentData = [
+    { hq: "유통본부", dept: "영업1팀", targets: [150, 180], sales: [140, 160], margins: [14, 16] },
+    { hq: "유통본부", dept: "영업2팀", targets: [100, 110], sales: [105, 90], margins: [10, 9] },
+    { hq: "솔루션본부", dept: "기술1팀", targets: [80, 85], sales: [75, 82], margins: [15, 18] }
+  ];
+
+  function handleEditMode() {
+    const isEdit = document.getElementById('editModeToggle').checked;
+    document.getElementById('addMonthBtn').style.display = isEdit ? 'inline-flex' : 'none';
+    document.getElementById('saveBtn').style.display = isEdit ? 'inline-flex' : 'none';
+    renderTargetTable();
+  }
+
+  function addNewMonth() {
+    const lastStr = activeMonths[activeMonths.length - 1];
+    let date = new Date(lastStr + "-01");
+    date.setMonth(date.getMonth() + 1);
+    activeMonths.push(date.toISOString().substring(0, 7));
+    currentData.forEach(row => { row.targets.push(0); row.sales.push(0); row.margins.push(0); });
+    renderTargetTable();
+  }
+
+  // addNewRow 함수 삭제됨
+
+  function toggleColMenu() { document.getElementById("colMenu").classList.toggle("show"); }
+  function initColMenu() {
+    document.getElementById("colMenu").innerHTML = columns.map((c, i) => `
+      <label style="display:flex;align-items:center;gap:8px;padding:6px;cursor:pointer;"><input type="checkbox" ${c.show ? 'checked' : ''} onchange="toggleCol(${i})"> ${c.label}</label>
+    `).join('');
+  }
+
+  function toggleCol(i) { columns[i].show = !columns[i].show; renderTargetTable(); }
+
+  function updateDeptFilter() {
+    const hq = document.getElementById('f_hq').value;
+    const deptSelect = document.getElementById('f_dept');
+    deptSelect.innerHTML = '<option value="ALL">전체 부서</option>';
+    const dMap = {"유통본부": ["영업1팀", "영업2팀"], "솔루션본부": ["기술1팀", "보안팀"]};
+    if (dMap[hq]) dMap[hq].forEach(d => { const opt = document.createElement('option'); opt.value = d; opt.textContent = d; deptSelect.appendChild(opt); });
+  }
+
+  function initResizable() {
+    const ths = document.querySelectorAll('th');
+    ths.forEach(th => {
+      if (th.querySelector('.resizer')) return;
+      const resizer = document.createElement('div'); resizer.classList.add('resizer'); th.appendChild(resizer);
+      let startX, startWidth;
+      resizer.addEventListener('mousedown', e => {
+        startX = e.pageX; startWidth = th.offsetWidth; resizer.classList.add('resizing');
+        const onMouseMove = e => { th.style.width = `${startWidth + (e.pageX - startX)}px`; };
+        const onMouseUp = () => { resizer.classList.remove('resizing'); document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); };
+        document.addEventListener('mousemove', onMouseMove); document.addEventListener('mouseup', onMouseUp);
+      });
+    });
+  }
+
+  function renderTargetTable() {
+    const isEdit = document.getElementById('editModeToggle').checked;
+    const showCols = columns.filter(c => c.show);
+    const colCount = showCols.length;
+    const thead = document.getElementById('targetHead');
+    const tbody = document.getElementById('targetBody');
+    const table = document.getElementById('targetTable');
+
+    const minWidth = 300 + (activeMonths.length * colCount * 100); 
+    table.style.minWidth = minWidth + "px";
+
+    thead.innerHTML = `
+      <tr>
+        <th rowspan="2" style="width:100px">본부</th>
+        <th rowspan="2" style="width:140px">부서명</th>
+        <th colspan="${colCount}" class="bg-total">기간 총계</th>
+        ${activeMonths.map(m => `<th colspan="${colCount}">${m}</th>`).join('')}
+      </tr>
+      <tr>
+        ${[`<th class="bg-total">${showCols.map(c=>c.label).join('</th><th class="bg-total">')}</th>`, 
+           activeMonths.map(() => `<th>${showCols.map(c=>c.label).join('</th><th>')}</th>`).join('')].join('')}
+      </tr>
+    `;
+
+    let bodyHtml = "";
+    currentData.forEach((row) => {
+      let rT=0, rS=0, rM=0;
+      let monthCells = row.targets.map((t, i) => {
+        const s = row.sales[i]; const m = row.margins[i];
+        rT+=t; rS+=s; rM+=m;
+        const ach = t > 0 ? (s/t*100).toFixed(1) : "0.0";
+        const mr = s > 0 ? (m/s*100).toFixed(1) : "0.0";
+        let cells = "";
+        showCols.forEach(c => {
+          if(c.key==='target') cells += `<td class="right mono ${isEdit?'editable-cell':''}">${isEdit?`<input type="text" class="edit-input" value="${t.toLocaleString()}">`: (t*1000000).toLocaleString()}</td>`;
+          if(c.key==='sales') cells += `<td class="right mono">${(s*1000000).toLocaleString()}</td>`;
+          if(c.key==='achieve') cells += `<td class="right mono ${ach>=100?'pos':'neg'}">${ach}%</td>`;
+          if(c.key==='margin') cells += `<td class="right mono">${(m*1000000).toLocaleString()}</td>`;
+          if(c.key==='margin_rate') cells += `<td class="right mono">${mr}%</td>`;
+        });
+        return cells;
+      }).join('');
+      bodyHtml += `<tr><td style="text-align:center">${row.hq}</td><td>${row.dept}</td>${renderSummaryCells(rT, rS, rM)}${monthCells}</tr>`;
+    });
+    tbody.innerHTML = bodyHtml;
+    setTimeout(initResizable, 50);
+  }
+
+  function renderSummaryCells(t, s, m) {
+    const ach = t > 0 ? (s/t*100).toFixed(1) : "0.0";
+    const mr = s > 0 ? (m/s*100).toFixed(1) : "0.0";
+    let h = "";
+    columns.forEach(c => {
+      if(!c.show) return;
+      if(c.key==='target') h += `<td class="bg-total mono right">${(t*1000000).toLocaleString()}</td>`;
+      if(c.key==='sales') h += `<td class="bg-total mono right">${(s*1000000).toLocaleString()}</td>`;
+      if(c.key==='achieve') h += `<td class="bg-total mono right ${ach>=100?'pos':'neg'}">${ach}%</td>`;
+      if(c.key==='margin') h += `<td class="bg-total mono right">${(m*1000000).toLocaleString()}</td>`;
+      if(c.key==='margin_rate') h += `<td class="bg-total mono right">${mr}%</td>`;
+    });
+    return h;
+  }
+
+  function saveData() { alert("저장되었습니다."); }
+
+  window.onclick = (e) => { if(!e.target.closest('#colMenu') && !e.target.closest('button[onclick="toggleColMenu()"]')) document.getElementById("colMenu").classList.remove("show"); }
+  window.onload = () => { initColMenu(); updateDeptFilter(); renderTargetTable(); };
+</script>
+</body>
+</html>

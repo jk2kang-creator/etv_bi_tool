@@ -1,0 +1,254 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>운전자금 분석 시스템 (v1.3.86)</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    /* --- v1.3.84 UI 규격 및 디자인 가이드 고정 --- */
+    :root{
+      --bg:#f5f7fb; --card:#ffffff; --text:#1f2a37; --muted:#6b7280; --border:#e5e7eb;
+      --primary:#1f5eff; --primary-2:#0b4bd6; --danger:#e11d48; --success:#10b981;
+      --warning:#f59e0b; --radius: 12px;
+      --font: "Pretendard", -apple-system, BlinkMacSystemFont, system-ui, Roboto, "Noto Sans KR", sans-serif;
+    }
+    *{box-sizing:border-box}
+    body{ margin:0; background:var(--bg); color:var(--text); font-family:var(--font); -webkit-font-smoothing: antialiased; overflow: hidden; }
+
+    .app{ height:100vh; display:grid; grid-template-columns: 260px 1fr; grid-template-rows: 64px 1fr; grid-template-areas: "head head" "lnb body"; transition: 0.3s ease; }
+    .app.lnb-hidden { grid-template-columns: 0px 1fr; }
+    
+    header{ grid-area:head; display:flex; align-items:center; justify-content:space-between; padding:0 20px; background:#0f2342; color:#fff; z-index:100; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+    .brand-wrap { display:flex; align-items:center; gap:12px; }
+    .menu-toggle { background: transparent; border: none; color: #fff; font-size: 20px; cursor: pointer; outline: none; }
+    .brand{ font-weight:800; font-size:16px; letter-spacing:-.5px; }
+    .pill { background:rgba(255,255,255,0.1); padding:2px 8px; border-radius:6px; font-size:10px; border:1px solid rgba(255,255,255,0.2); margin-left:8px; }
+    
+    /* [고정] LNB 영역 전체 메뉴 및 v1.3.84 간격 */
+    nav{ grid-area:lnb; padding:20px 15px; border-right:1px solid var(--border); background:#fff; overflow-y:auto; display:flex; flex-direction:column; gap:8px; transition: 0.3s; }
+    .app.lnb-hidden nav { opacity: 0; pointer-events: none; }
+    .lnb-title { font-size:11px; color:#94a3b8; font-weight:700; margin:10px 0 8px 10px; text-transform:uppercase; letter-spacing: 0.5px; }
+    .lnb-item{ display:flex; align-items:center; gap:12px; padding:10px 15px; border-radius:10px; cursor:pointer; color:#475569; transition:0.2s; text-decoration: none; font-size: 14px; }
+    .lnb-item:hover { background: #f8fafc; color: var(--primary); }
+    .lnb-item.active{ background:#eff6ff; color:#2563eb; font-weight:700; }
+    .lnb-ico{ font-size:16px; width:20px; text-align:center; }
+    .lnb-sub{ font-size:11px; color:#94a3b8; margin-top:2px; font-weight:400; }
+    .lnb-divider { height:1px; background:#f1f5f9; margin:12px 0; }
+
+    main{ grid-area:body; padding:20px; overflow-y:auto; min-width: 0; }
+    
+    /* [고정] 최상단 검색 카드 (image_a4fa26.png) */
+    .search-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow: 0 2px 4px rgba(0,0,0,0.02); padding:20px; margin-bottom:16px; }
+    .search-hd { display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; padding-bottom:10px; border-bottom:1px solid #f1f5f9; }
+    .search-hd h3 { margin:0; font-size:15px; font-weight:700; color:#1e293b; }
+    .top-actions { display:flex; align-items:center; gap:8px; }
+    
+    .search-controls { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+    .field { display:flex; flex-direction:column; gap:4px; }
+    .field label { font-size:11px; font-weight:600; color:var(--muted); }
+    select { height:36px; border-radius:6px; border:1px solid var(--border); padding:0 10px; font-size:12px; outline:none; background:#fff; min-width:110px; }
+
+    .btn{ height:36px; padding:0 12px; border-radius:6px; border:1px solid var(--border); font-weight:600; font-size:11px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:0.2s; justify-content: center; }
+    .btn.primary{ background:var(--primary); color:#fff; border:none; }
+    .btn.success { background:var(--success); color:#fff; border:none; }
+    .btn.outline { background: #fff; color: var(--text); }
+    
+    .switch-wrap { display: flex; align-items: center; gap: 8px; padding: 0 12px; background: #f8fafc; border: 1px solid var(--border); border-radius: 6px; height: 36px; cursor: pointer; }
+    .switch-wrap span { font-size: 11px; font-weight: 700; color: var(--danger); }
+    .switch { position: relative; display: inline-block; width: 34px; height: 18px; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #cbd5e1; transition: .4s; border-radius: 18px; }
+    .slider:before { position: absolute; content: ""; height: 12px; width: 12px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--danger); }
+    input:checked + .slider:before { transform: translateX(16px); }
+
+    /* [고정] BI 요약 KPI 영역 */
+    .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
+    .kpi-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:14px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
+    .kpi-label { font-size:11px; font-weight:600; color:var(--muted); margin-bottom:4px; display: flex; justify-content: space-between; }
+    .kpi-value { font-size:18px; font-weight:800; color:#1e293b; }
+    .kpi-sub { font-size:10px; margin-top:4px; font-weight: 600; }
+    .text-danger { color: var(--danger) !important; font-weight: 700; }
+    .text-success { color: var(--primary) !important; font-weight: 700; }
+    .badge { padding: 2px 4px; border-radius: 4px; font-size: 9px; color: #fff; font-weight: 800; }
+
+    /* [고정] 탭 메뉴 및 테이블 데이터 */
+    .tabs { display: flex; gap: 4px; border-bottom: 1px solid var(--border); }
+    .tab-btn { padding: 10px 20px; background: #f8fafc; border: 1px solid var(--border); border-bottom: none; border-radius: 8px 8px 0 0; cursor: pointer; font-size: 12px; font-weight: 600; color: var(--muted); }
+    .tab-btn.active { background: #fff; color: var(--primary); border-top: 2px solid var(--primary); height: 40px; margin-top: -2px; font-weight: 800; }
+    .tab-content { background: #fff; border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius); padding: 16px; min-height: 400px; }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    .table-container{ overflow-x:auto; border:1px solid var(--border); border-radius:8px; background: #fff; margin-bottom: 16px; position: relative; }
+    table{ width: 100%; min-width: max-content; border-collapse:collapse; font-size:11px; table-layout: fixed; }
+    th{ position:sticky; top:0; background:#f8fafc; padding:8px; border:1px solid var(--border); text-align:center; color:#64748b; font-weight: 700; z-index: 10; }
+    td{ padding:4px 8px; border:1px solid var(--border); color:#334155; height: 32px; text-align: right; }
+    .sticky-col { position: sticky; left: 0; z-index: 12; width: 200px !important; background: #f1f5f9 !important; font-weight: 800; text-align: left; border-right: 2px solid #cbd5e1; }
+    .bg-total { background-color: #f1f5f9 !important; font-weight: 800; }
+    .highlight-row { background-color: #fffbeb !important; font-weight: 700; }
+    .resizer { position: absolute; top: 0; right: 0; width: 4px; cursor: col-resize; user-select: none; height: 100%; z-index: 25; }
+    .risk-row-highlight { background-color: #fef2f2 !important; color: #dc2626 !important; }
+  </style>
+</head>
+<body>
+
+<div class="app" id="appContainer">
+  <header>
+    <div class="brand-wrap">
+      <button class="menu-toggle" onclick="toggleLNB()">&#9776;</button>
+      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.86</span></div>
+    </div>
+    <div class="user"><strong style="font-size:12px">비즈니스기획팀 강형구 님</strong></div>
+  </header>
+
+  <nav>
+    <div class="lnb-title">Management Services</div>
+    <a href="#" class="lnb-item"><div class="lnb-ico">📉</div><div>손익현황<div class="lnb-sub">전사 분석</div></div></a>
+    <a href="#" class="lnb-item"><div class="lnb-ico">🎯</div><div>목표현황<div class="lnb-sub">목표달성율</div></div></a>
+    <a href="#" class="lnb-item"><div class="lnb-ico">💰</div><div>매출현황<div class="lnb-sub">출하완료 기준</div></div></a>
+    <a href="#" class="lnb-item active"><div class="lnb-ico">🏦</div><div>운전자금현황<div class="lnb-sub">Cash Flow</div></div></a>
+    <a href="#" class="lnb-item"><div class="lnb-ico">📦</div><div>재고현황<div class="lnb-sub">재고 분석</div></div></a>
+    <a href="#" class="lnb-item"><div class="lnb-ico">🧾</div><div>미수금현황<div class="lnb-sub">채권 관리</div></div></a>
+    <a href="#" class="lnb-item"><div class="lnb-ico">📄</div><div>미발행현황<div class="lnb-sub">세금계산서</div></div></a>
+    <a href="#" class="lnb-item"><div class="lnb-ico">🏷️</div><div>리베이트 현황<div class="lnb-sub">Rebate</div></div></a>
+    <a href="#" class="lnb-item"><div class="lnb-ico">↩️</div><div>반품이력조회<div class="lnb-sub">History</div></div></a>
+    <div class="lnb-divider"></div>
+    <a href="#" class="lnb-item"><div class="lnb-ico">⚙️</div><div>관리자 설정</div></a>
+  </nav>
+
+  <main id="mainContainer">
+    <div class="search-card">
+      <div class="search-hd">
+        <h3>운전자금 데이터 검색 및 관리</h3>
+        <div class="top-actions">
+          <button class="btn outline" onclick="alert('기초자료 업로드 모달')">⬆️ 기초자료 업로드</button>
+          <button class="btn primary" onclick="downloadFullExcel()">📥 통합 엑셀 다운로드 (멀티시트)</button>
+          <button class="btn success" onclick="alert('저장 완료')">💾 저장</button>
+        </div>
+      </div>
+      <div class="search-controls">
+        <div class="field"><label>연도</label><select><option>2026년</option></select></div>
+        <div class="field"><label>월</label><select><option>02월</option></select></div>
+        <div class="field"><label>주차</label><select><option>3주차 (2/15~2/21)</option></select></div>
+        
+        <div class="switch-wrap">
+            <span>⚠️ 장기(90일↑)</span>
+            <label class="switch">
+                <input type="checkbox" id="riskToggle" onchange="toggleRiskMode()">
+                <span class="slider"></span>
+            </label>
+        </div>
+        
+        <button class="btn primary" style="background:var(--primary);">🔎 조회</button>
+      </div>
+    </div>
+
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-label">총 운전자금 (eBT)</div><div class="kpi-value">105,468 <small>백만</small></div><div class="kpi-sub text-danger">▲ 1,089 (전주비)</div></div>
+      <div class="kpi-card" style="border-left: 4px solid var(--primary);"><div class="kpi-label">전년비 증감액</div><div class="kpi-value text-success">-20,021 <small>백만</small></div><div class="kpi-sub text-success">▼ 15.9% 감소 (개선)</div></div>
+      <div class="kpi-card"><div class="kpi-label">매출 대비 배수</div><div class="kpi-value">3.73 <small>배</small></div><div class="kpi-sub text-success">▼ 0.46배 개선</div></div>
+      <div class="kpi-card" style="border-left: 4px solid var(--success);"><div class="kpi-label">자금 유동성 지수 <span class="badge" style="background:var(--success)">Healthy</span></div><div class="kpi-value">84.5 <small>점</small></div><div class="kpi-sub text-success">AR 회수 효율 우수</div></div>
+    </div>
+    <div class="kpi-row">
+      <div class="kpi-card"><div class="kpi-label">리스크 집중도</div><div class="kpi-value">Storage (21.8%)</div><div class="kpi-sub text-muted">23,003백만 보유</div></div>
+      <div class="kpi-card"><div class="kpi-label">회수 기간 경고</div><div class="kpi-value">Server (412일)</div><div class="kpi-sub text-danger">배수 13.75배 리스크</div></div>
+      <div class="kpi-card"><div class="kpi-label">이상 징후 부문</div><div class="kpi-value">DSS (+863%)</div><div class="kpi-sub text-danger">평균 857 → 현재 8,256</div></div>
+      <div class="kpi-card"><div class="kpi-label">자금 선행 지표</div><div class="kpi-value">+508 <small>백만</small></div><div class="kpi-sub text-danger">미발행 항목 전주비 증가</div></div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab(event, 'tab1')">현재 현황 및 증감</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab2')">전년비 분석(YoY)</button>
+      <button class="tab-btn" onclick="switchTab(event, 'tab3')">과거 이력(FY25)</button>
+    </div>
+
+    <div class="tab-content">
+      <div id="tab1" class="tab-pane active">
+        <div class="table-container">
+          <table id="table1">
+            <thead>
+              <tr><th class="sticky-col">구분</th><th style="width:110px">C&S</th><th style="width:110px">디바이스</th><th style="width:110px">DSS</th><th style="width:110px">Print</th><th style="width:110px">Storage</th><th style="width:110px">보안솔루션</th><th class="bg-total" style="width:130px">eBT 합계</th></tr>
+            </thead>
+            <tbody>
+              <tr><td class="sticky-col">매출평균(12~2월)</td><td>1,918</td><td>4,735</td><td>1,980</td><td>3,925</td><td>3,755</td><td>5,563</td><td class="bg-total">28,272</td></tr>
+              <tr class="risk-row"><td class="sticky-col">미수 (A/R)</td><td>5,029</td><td>9,167</td><td>3,751</td><td>8,573</td><td>10,301</td><td>13,737</td><td class="bg-total">53,953</td></tr>
+              <tr class="risk-row"><td class="sticky-col">미발행 (Unbilled)</td><td>884</td><td>3,028</td><td>1,980</td><td>1,338</td><td>8,046</td><td>2,497</td><td class="bg-total">20,890</td></tr>
+              <tr class="risk-row"><td class="sticky-col">재고 (Inventory)</td><td>1,725</td><td>3,895</td><td>2,526</td><td>2,894</td><td>4,656</td><td>4,994</td><td class="bg-total">30,625</td></tr>
+              <tr class="bg-total"><td class="sticky-col">운전자금 계</td><td>7,638</td><td>16,090</td><td>8,256</td><td>12,805</td><td>23,003</td><td>21,228</td><td class="bg-total">105,468</td></tr>
+              <tr class="highlight-row"><td class="sticky-col">운전자금/매출배수</td><td class="text-danger">3.98</td><td class="text-danger">3.40</td><td class="text-danger">4.17</td><td class="text-danger">3.26</td><td class="text-danger">6.13</td><td class="text-danger">3.82</td><td class="bg-total text-danger">3.73</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div id="tab2" class="tab-pane">
+        <div class="table-container">
+          <table id="table2">
+            <thead><tr><th class="sticky-col">분석 항목</th><th>C&S</th><th>디바이스</th><th>DSS</th><th>Print</th><th class="bg-total">전사 합계</th></tr></thead>
+            <tbody>
+              <tr><td class="sticky-col">전년비 증감(Amt)</td><td class="text-success">-205</td><td class="text-success">-5,304</td><td class="text-danger">7,399</td><td class="text-danger">1,975</td><td class="bg-total text-success">-20,021</td></tr>
+              <tr><td class="sticky-col">배수 증감(YoY)</td><td class="text-success">-0.66</td><td class="text-success">-0.18</td><td class="text-success">-4.24</td><td class="text-danger">0.29</td><td class="bg-total text-success">-0.46</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div id="tab3" class="tab-pane">
+        <div class="table-container">
+          <table id="table3">
+            <thead><tr><th class="sticky-col">이력 구분</th><th>FY25 Avg</th><th>2/13 실적</th><th>2/06 실적</th><th class="bg-total">평균 대비</th></tr></thead>
+            <tbody>
+              <tr><td class="sticky-col">전사 WC 총액</td><td>125,488</td><td>104,379</td><td>103,950</td><td class="bg-total text-success">-21,109</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  function toggleLNB() { document.getElementById('appContainer').classList.toggle('lnb-hidden'); }
+  function switchTab(evt, tabId) {
+    document.querySelectorAll('.tab-pane').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById(tabId).classList.add('active');
+    evt.currentTarget.classList.add('active');
+    initResizable();
+  }
+  function toggleRiskMode() {
+    const isRisk = document.getElementById('riskToggle').checked;
+    document.querySelectorAll('.risk-row').forEach(row => row.classList.toggle('risk-row-highlight', isRisk));
+  }
+  function downloadFullExcel() {
+    const wb = XLSX.utils.book_new();
+    const sheets = [{id:'table1', name:'현재현황'}, {id:'table2', name:'전년비분석'}, {id:'table3', name:'과거이력'}];
+    sheets.forEach(s => {
+      const el = document.getElementById(s.id);
+      if(el) { XLSX.utils.book_append_sheet(wb, XLSX.utils.table_to_sheet(el), s.name); }
+    });
+    XLSX.writeFile(wb, `Etevers_WC_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
+  }
+  function initResizable() {
+    document.querySelectorAll('th').forEach(col => {
+      if (!col.querySelector('.resizer')) {
+        const resizer = document.createElement('div');
+        resizer.className = 'resizer';
+        col.appendChild(resizer);
+        resizer.addEventListener('mousedown', function(e) {
+          const startX = e.pageX; const startWidth = col.offsetWidth;
+          const onMouseMove = (e) => {
+            const width = startWidth + (e.pageX - startX);
+            if (width > 80) { col.style.width = width + 'px'; col.style.minWidth = width + 'px'; }
+          };
+          const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); };
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+      }
+    });
+  }
+  window.onload = initResizable;
+</script>
+</body>
+</html>
