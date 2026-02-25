@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>리베이트 분석 시스템 (v1.3.89)</title>
+  <title>리베이트 분석 시스템 (v1.3.90)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    /* --- v1.3.87 오리지널 디자인 시스템 유지 --- */
+    /* --- v1.3.87~90 디자인 시스템 유지 --- */
     :root{
       --bg:#f5f7fb; --card:#ffffff; --text:#1f2a37; --muted:#6b7280; --border:#e5e7eb;
       --primary:#1f5eff; --primary-2:#0b4bd6; --danger:#e11d48; --success:#10b981;
@@ -36,7 +36,7 @@
 
     main{ grid-area:body; padding:20px; overflow-y:auto; min-width: 0; }
     
-    /* [개선] 수정 모드 버튼 UI - 다른 버튼들과 통일감 부여 */
+    /* 수정 모드 UI */
     .edit-mode-toggle { 
       height: 36px; padding: 0 12px; border-radius: 6px; 
       border: 1px solid var(--border); background: #fff; 
@@ -45,12 +45,9 @@
     }
     .edit-mode-toggle span { font-size: 11px; font-weight: 600; color: var(--text); }
     .edit-mode-toggle input { cursor: pointer; margin: 0; width: 14px; height: 14px; }
-    .edit-mode-toggle:hover { background: #f8fafc; }
-    /* 활성화 시 스타일 */
     .edit-mode-toggle.active { background: #eff6ff; border-color: var(--primary); }
     .edit-mode-toggle.active span { color: var(--primary); }
 
-    /* 테이블 입력 필드 스타일 */
     .table-input { width: 100%; border: 1px solid transparent; background: transparent; text-align: inherit; padding: 2px 4px; font-family: inherit; font-size: inherit; color: inherit; border-radius: 4px; pointer-events: none; outline: none; }
     .edit-active .table-input { pointer-events: auto; border-color: #cbd5e1; background: #ffffff; }
     .edit-active .editable-cell { background-color: #fffbeb !important; }
@@ -60,11 +57,16 @@
     .search-hd h3 { margin:0; font-size:15px; font-weight:700; color:#1e293b; }
     .top-actions { display:flex; align-items:center; gap:8px; }
     
+    /* [개선] image_b54c22.png 기반 조회 컨트롤 레이아웃 */
+    .search-controls { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
+    .field { display:flex; flex-direction:column; gap:6px; }
+    .field label { font-size:12px; font-weight:600; color:var(--text); }
+    select, input[type="month"] { height:40px; border-radius:8px; border:1px solid var(--border); padding:0 12px; font-size:13px; outline:none; background:#fff; min-width:140px; }
+
     .btn{ height:36px; padding:0 12px; border-radius:6px; border:1px solid var(--border); font-weight:600; font-size:11px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:0.2s; justify-content: center; }
-    .btn.primary{ background:var(--primary); color:#fff; border:none; }
+    .btn.primary{ background:var(--primary); color:#fff; border:none; height: 40px; padding: 0 20px; font-size: 13px; border-radius: 8px; }
     .btn.success { background:var(--success); color:#fff; border:none; }
     .btn.outline { background: #fff; color: var(--text); }
-    .btn.outline:hover { background: #f8fafc; }
 
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
     .kpi-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
@@ -89,7 +91,7 @@
   <header>
     <div class="brand-wrap">
       <button class="menu-toggle" onclick="toggleLNB()">&#9776;</button>
-      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.89</span></div>
+      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.90</span></div>
     </div>
     <div class="user"><strong style="font-size:12px">비즈니스기획팀 강형구 님</strong></div>
   </header>
@@ -123,9 +125,28 @@
           <button class="btn success" onclick="alert('저장되었습니다.')">💾 저장</button>
         </div>
       </div>
+      
       <div class="search-controls">
-        <div class="field"><label>회계연도</label><select><option>2026년</option></select></div>
-        <div class="field"><label>조회월</label><select id="monthFilter"><option>01월</option></select></div>
+        <div class="field">
+            <label>조회 기준</label>
+            <select><option>월별 비교</option></select>
+        </div>
+        <div class="field">
+            <label>시작 월</label>
+            <input type="month" value="2025-10">
+        </div>
+        <div class="field">
+            <label>종료 월</label>
+            <input type="month" value="2026-09">
+        </div>
+        <div class="field">
+            <label>본부</label>
+            <select><option>전체</option></select>
+        </div>
+        <div class="field">
+            <label>부서</label>
+            <select><option>전체</option></select>
+        </div>
         <button class="btn primary">🔎 조회</button>
       </div>
     </div>
@@ -191,7 +212,7 @@
 
   function toggleLNB() { document.getElementById('appContainer').classList.toggle('lnb-hidden'); }
 
-  // [기능] 수정 모드 토글 및 버튼 스타일 제어
+  // [기능] 수정 모드 및 버튼 스타일 제어
   function toggleEditMode() {
     const isEdit = document.getElementById('editToggle').checked;
     const label = document.getElementById('editToggleLabel');
@@ -250,11 +271,6 @@
       <td class="right mono">0</td>
     `;
     tbody.appendChild(newGroupRow);
-
-    const select = document.getElementById('monthFilter');
-    const opt = document.createElement('option');
-    opt.text = `${String(currentMonthCount).padStart(2, '0')}월`;
-    select.add(opt);
   }
 </script>
 </body>
