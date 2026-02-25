@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>리베이트 분석 시스템 (v1.3.95)</title>
+  <title>리베이트 분석 시스템 (v1.3.96)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     /* --- 디자인 시스템 --- */
@@ -47,14 +47,13 @@
     .edit-mode-toggle.active { background: #eff6ff; border-color: var(--primary); }
     .edit-mode-toggle.active span { color: var(--primary); }
 
-    /* [개선] image_3f6c83.png 기반 Select/Input UI */
+    /* [개선] Select/Input UI 및 중앙 정렬 */
     .table-input { 
       width: 100%; border: 1px solid transparent; background: transparent; 
-      text-align: center; padding: 4px 8px; font-family: inherit; 
+      text-align: center; text-align-last: center; padding: 4px 8px; font-family: inherit; 
       font-size: 11px; color: inherit; border-radius: 6px; 
       pointer-events: none; outline: none; appearance: none;
     }
-    /* 수정 모드 활성 시 시각화 강화 */
     .edit-active .table-input { 
       pointer-events: auto; border: 1px solid #cbd5e1; background: #ffffff; 
       box-shadow: 0 1px 2px rgba(0,0,0,0.05);
@@ -65,7 +64,6 @@
     }
     .edit-active .editable-cell { background-color: #fffbeb !important; }
 
-    /* [추가] 행 선택 스타일 */
     .data-row { cursor: pointer; transition: background 0.2s; }
     .data-row:hover { background-color: #f8fafc; }
     .data-row.selected { background-color: #e0f2fe !important; border: 2px solid var(--primary); }
@@ -89,9 +87,12 @@
     .table-container{ overflow-x:auto; border:1px solid var(--border); border-radius:8px; background: #fff; margin-bottom: 16px; position: relative; }
     table{ width: 100%; min-width: max-content; border-collapse:collapse; font-size:11px; table-layout: fixed; }
     th{ position:sticky; top:0; background:#f8fafc; padding:8px; border:1px solid var(--border); text-align:center; color:#64748b; font-weight: 700; z-index: 10; }
-    td{ padding:4px 8px; border:1px solid var(--border); color:#334155; height: 38px; text-align: center; } /* 기본 가운데 정렬 */
+    td{ padding:4px 8px; border:1px solid var(--border); color:#334155; height: 38px; text-align: center; } 
     
-    /* [정정] 숫자 항목만 우측 정렬 */
+    /* [기능 추가] 컬럼 너비 조절 리사이저 */
+    .resizer { position: absolute; top: 0; right: 0; width: 4px; cursor: col-resize; user-select: none; height: 100%; z-index: 25; }
+    .resizer:hover { background: var(--primary); }
+
     .right { text-align: right !important; }
     .center { text-align: center !important; }
     .bg-subtotal { background-color: #f8fafc !important; font-weight: 700; color: #1e293b !important; }
@@ -106,7 +107,7 @@
   <header>
     <div class="brand-wrap">
       <button class="menu-toggle" onclick="toggleLNB()">&#9776;</button>
-      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.95</span></div>
+      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.96</span></div>
     </div>
     <div class="user"><strong style="font-size:12px">비즈니스기획팀 강형구 님</strong></div>
   </header>
@@ -158,8 +159,8 @@
         <thead>
           <tr>
             <th class="sticky-col">구분</th>
-            <th style="width:130px">리베이트 구분</th>
-            <th style="width:130px">프로그램 명칭</th>
+            <th style="width:180px">리베이트 구분</th>
+            <th style="width:150px">프로그램 명칭</th>
             <th style="width:110px">입금액(A)</th>
             <th style="width:110px">이월금액(B)</th>
             <th style="width:110px">(A)+(B)</th>
@@ -224,22 +225,38 @@
     if (editToggle.checked) { editToggle.checked = false; toggleEditMode(); }
   }
 
-  // [기능] 행 선택 처리
   function selectRow(row) {
     if (selectedRow) selectedRow.classList.remove('selected');
     selectedRow = row;
     selectedRow.classList.add('selected');
   }
 
-  // [기능] 선택 행 아래에 추가
+  // [기능 추가] 컬럼 너비 수동 조절 로직
+  function initResizable() {
+    document.querySelectorAll('th').forEach(col => {
+      if (!col.querySelector('.resizer')) {
+        const resizer = document.createElement('div');
+        resizer.className = 'resizer';
+        col.appendChild(resizer);
+        resizer.addEventListener('mousedown', function(e) {
+          const startX = e.pageX; const startWidth = col.offsetWidth;
+          const onMouseMove = (e) => {
+            const width = startWidth + (e.pageX - startX);
+            if (width > 60) { col.style.width = width + 'px'; col.style.minWidth = width + 'px'; }
+          };
+          const onMouseUp = () => { document.removeEventListener('mousemove', onMouseMove); document.removeEventListener('mouseup', onMouseUp); };
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        });
+      }
+    });
+  }
+
   function addRow() {
     if (!selectedRow) { alert('추가할 위치의 행을 먼저 마우스로 선택해주세요.'); return; }
-    
     const month = selectedRow.getAttribute('data-month');
     const firstRowOfGroup = document.querySelector(`.data-row[data-month="${month}"]`);
     const labelTd = firstRowOfGroup.querySelector('.month-label');
-    
-    // Rowspan 증가
     labelTd.setAttribute('rowspan', parseInt(labelTd.getAttribute('rowspan')) + 1);
 
     const newRow = document.createElement('tr');
@@ -247,55 +264,40 @@
     newRow.setAttribute('data-month', month);
     newRow.onclick = function() { selectRow(this); };
     newRow.innerHTML = `
-      <td class="editable-cell">
-        <select class="table-input">
-          <option value="sell-In">sell-In</option><option value="sell-Thru">sell-Thru</option>
-          <option value="Sell-out">Sell-out</option><option value="MDF">MDF</option>
-        </select>
-      </td>
+      <td class="editable-cell"><select class="table-input"><option value="sell-In">sell-In</option><option value="sell-Thru">sell-Thru</option><option value="Sell-out">Sell-out</option><option value="MDF">MDF</option></select></td>
       <td class="editable-cell"><input type="text" class="table-input" value="신규 프로그램"></td>
       <td class="editable-cell"><input type="text" class="table-input right mono val-a" value="0" oninput="calcAll()"></td>
       <td class="editable-cell"><input type="text" class="table-input right mono val-b" value="0" oninput="calcAll()"></td>
       <td class="right mono bg-subtotal row-ab">0</td><td class="right mono">0</td>
       <td class="editable-cell"><input type="text" class="table-input right mono val-pay" value="0" oninput="calcAll()"></td>
-      <td class="editable-cell"><input type="text" class="table-input" value="-"></td>
-      <td class="editable-cell"><input type="text" class="table-input mono" value="-"></td>
+      <td class="editable-cell"><input type="text" class="table-input" value="-"></td><td class="editable-cell"><input type="text" class="table-input mono" value="-"></td>
       <td class="right mono row-balance">0</td>
     `;
-    
     selectedRow.parentNode.insertBefore(newRow, selectedRow.nextSibling);
-    
-    // 자동 수정모드 활성화
     const editToggle = document.getElementById('editToggle');
     if (!editToggle.checked) { editToggle.checked = true; toggleEditMode(); }
     calcAll();
-    selectRow(newRow); // 새로 만든 행을 선택 상태로 변경
+    selectRow(newRow);
   }
 
-  // [기능] 선택 행 삭제
   function deleteRow() {
     if (!selectedRow) { alert('삭제할 행을 먼저 마우스로 선택해주세요.'); return; }
-    
     const month = selectedRow.getAttribute('data-month');
     const monthRows = document.querySelectorAll(`.data-row[data-month="${month}"]`);
-    
     if (monthRows.length <= 1) { alert("해당 월의 마지막 데이터 행은 삭제할 수 없습니다."); return; }
     if (!confirm("선택한 행을 삭제하시겠습니까?")) return;
 
-    // 만약 삭제하려는 행이 월 레이블(rowspan)을 가진 첫 행이라면?
     if (selectedRow.querySelector('.month-label')) {
         const nextRow = selectedRow.nextSibling;
         const labelTd = selectedRow.querySelector('.month-label');
         labelTd.setAttribute('rowspan', parseInt(labelTd.getAttribute('rowspan')) - 1);
-        nextRow.insertBefore(labelTd, nextRow.firstChild); // 레이블을 다음 행으로 이사
+        nextRow.insertBefore(labelTd, nextRow.firstChild);
     } else {
         const firstRow = monthRows[0];
         const labelTd = firstRow.querySelector('.month-label');
         labelTd.setAttribute('rowspan', parseInt(labelTd.getAttribute('rowspan')) - 1);
     }
-
-    const parent = selectedRow.parentNode;
-    parent.removeChild(selectedRow);
+    selectedRow.parentNode.removeChild(selectedRow);
     selectedRow = null;
     calcAll();
   }
@@ -330,7 +332,6 @@
     const rows = document.querySelectorAll('.data-row');
     const months = [...new Set([...rows].map(r => r.getAttribute('data-month')))];
     let grandA=0, grandB=0, grandPay=0;
-
     months.forEach(m => {
       const monthRows = document.querySelectorAll(`.data-row[data-month="${m}"]`);
       let mA=0, mB=0, mPay=0;
@@ -368,7 +369,10 @@
     XLSX.writeFile(wb, `Etevers_Rebate_Report_${new Date().toISOString().slice(0,10)}.xlsx`);
   }
 
-  window.onload = calcAll;
+  window.onload = function() {
+    calcAll();
+    initResizable(); // 리사이저 초기화
+  };
 </script>
 </body>
 </html>
