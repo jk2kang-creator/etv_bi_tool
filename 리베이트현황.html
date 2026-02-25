@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>리베이트 분석 시스템 (v1.3.98)</title>
+  <title>리베이트 분석 시스템 (v1.3.99)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     /* --- 디자인 시스템 --- */
@@ -47,17 +47,13 @@
     .edit-mode-toggle.active { background: #eff6ff; border-color: var(--primary); }
     .edit-mode-toggle.active span { color: var(--primary); }
 
-    /* [수정] 테이블 입력 및 정렬 UI 최적화 */
     .table-input { 
       width: 100%; border: 1px solid transparent; background: transparent; 
       text-align: center; padding: 4px 8px; font-family: inherit; 
       font-size: 11px; color: inherit; border-radius: 6px; 
       pointer-events: none; outline: none; appearance: none;
     }
-    /* 1) 금액 항목 우측 정렬 강제 적용 */
-    .table-input.right { 
-      text-align: right !important; 
-    }
+    .table-input.right { text-align: right !important; }
     
     .edit-active .table-input { 
       pointer-events: auto; border: 1px solid #cbd5e1; background: #ffffff; 
@@ -88,6 +84,7 @@
     .btn.success { background:var(--success); color:#fff; border:none; }
     .btn.outline { background: #fff; color: var(--text); }
     .btn.danger-outline { background: #fff; color: var(--danger); border-color: var(--danger); }
+    .btn.danger-outline:hover { background: #fff1f2; }
 
     .table-container{ overflow-x:auto; border:1px solid var(--border); border-radius:8px; background: #fff; margin-bottom: 16px; position: relative; }
     table{ width: 100%; min-width: max-content; border-collapse:collapse; font-size:11px; table-layout: fixed; }
@@ -97,7 +94,6 @@
     .resizer { position: absolute; top: 0; right: 0; width: 4px; cursor: col-resize; user-select: none; height: 100%; z-index: 25; }
     .resizer:hover { background: var(--primary); }
 
-    /* 2) 연도 구분 행 스타일 개선 (가독성 확보) */
     .year-divider td { background-color: #1e293b !important; color: #f8fafc !important; font-weight: 800; font-size: 12px; height: 34px !important; border-bottom: 2px solid #0f172a !important; }
 
     .right { text-align: right !important; }
@@ -113,7 +109,7 @@
   <header>
     <div class="brand-wrap">
       <button class="menu-toggle" onclick="toggleLNB()">&#9776;</button>
-      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.98</span></div>
+      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.99</span></div>
     </div>
     <div class="user"><strong style="font-size:12px">비즈니스기획팀 강형구 님</strong></div>
   </header>
@@ -139,6 +135,7 @@
         <h3>리베이트(MDF) 집행 현황 관리</h3>
         <div class="top-actions">
           <button class="btn outline" onclick="addMonth()">📅 월 추가</button>
+          <button class="btn danger-outline" onclick="deleteMonth()">📅 월 삭제</button>
           <button class="btn outline" onclick="addRow()">➕ 선택행 아래 추가</button>
           <button class="btn danger-outline" onclick="deleteRow()">➖ 선택행 삭제</button>
           <label class="edit-mode-toggle" id="editToggleLabel">
@@ -306,6 +303,36 @@
     selectedRow.parentNode.removeChild(selectedRow);
     selectedRow = null;
     calcAll();
+  }
+
+  // [기능 추가] 월 삭제 기능
+  function deleteMonth() {
+    const tbody = document.getElementById('rebateBody');
+    const allSubtotalRows = tbody.querySelectorAll('.subtotal-row');
+    
+    if (allSubtotalRows.length === 0) {
+      alert("삭제할 월 데이터가 없습니다.");
+      return;
+    }
+
+    if (!confirm("가장 최근에 추가된 월의 모든 데이터와 소계가 삭제됩니다. 계속하시겠습니까?")) return;
+
+    const lastSubRow = allSubtotalRows[allSubtotalRows.length - 1];
+    const monthId = lastSubRow.getAttribute('data-month');
+    const dataRows = tbody.querySelectorAll(`.data-row[data-month="${monthId}"]`);
+
+    // 해당 월의 데이터 행들과 소계 행 삭제
+    dataRows.forEach(row => tbody.removeChild(row));
+    tbody.removeChild(lastSubRow);
+
+    // 연도 구분선만 남았을 경우 처리
+    const remainingRows = tbody.children;
+    if (remainingRows.length > 0 && remainingRows[remainingRows.length - 1].classList.contains('year-divider')) {
+        tbody.removeChild(remainingRows[remainingRows.length - 1]);
+    }
+
+    calcAll();
+    selectedRow = null;
   }
 
   function addMonth() {
