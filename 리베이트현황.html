@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>리베이트 분석 시스템 (v1.3.87)</title>
+  <title>리베이트 분석 시스템 (v1.3.89)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
     /* --- v1.3.87 오리지널 디자인 시스템 유지 --- */
@@ -36,9 +36,21 @@
 
     main{ grid-area:body; padding:20px; overflow-y:auto; min-width: 0; }
     
-    /* [기능 추가] 수정 모드 및 인풋 스타일 */
-    .edit-mode-toggle { display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; background: #f1f5f9; border-radius: 6px; border: 1px solid var(--border); cursor: pointer; transition: 0.2s; }
-    .edit-mode-toggle span { font-size: 11px; font-weight: 600; color: #2563eb; }
+    /* [개선] 수정 모드 버튼 UI - 다른 버튼들과 통일감 부여 */
+    .edit-mode-toggle { 
+      height: 36px; padding: 0 12px; border-radius: 6px; 
+      border: 1px solid var(--border); background: #fff; 
+      display: inline-flex; align-items: center; gap: 8px; 
+      cursor: pointer; transition: 0.2s; 
+    }
+    .edit-mode-toggle span { font-size: 11px; font-weight: 600; color: var(--text); }
+    .edit-mode-toggle input { cursor: pointer; margin: 0; width: 14px; height: 14px; }
+    .edit-mode-toggle:hover { background: #f8fafc; }
+    /* 활성화 시 스타일 */
+    .edit-mode-toggle.active { background: #eff6ff; border-color: var(--primary); }
+    .edit-mode-toggle.active span { color: var(--primary); }
+
+    /* 테이블 입력 필드 스타일 */
     .table-input { width: 100%; border: 1px solid transparent; background: transparent; text-align: inherit; padding: 2px 4px; font-family: inherit; font-size: inherit; color: inherit; border-radius: 4px; pointer-events: none; outline: none; }
     .edit-active .table-input { pointer-events: auto; border-color: #cbd5e1; background: #ffffff; }
     .edit-active .editable-cell { background-color: #fffbeb !important; }
@@ -48,15 +60,11 @@
     .search-hd h3 { margin:0; font-size:15px; font-weight:700; color:#1e293b; }
     .top-actions { display:flex; align-items:center; gap:8px; }
     
-    .search-controls { display:flex; flex-wrap:wrap; gap:12px; align-items:flex-end; }
-    .field { display:flex; flex-direction:column; gap:4px; }
-    .field label { font-size:11px; font-weight:600; color:var(--muted); }
-    select, input { height:36px; border-radius:6px; border:1px solid var(--border); padding:0 10px; font-size:12px; outline:none; background:#fff; min-width:110px; }
-
     .btn{ height:36px; padding:0 12px; border-radius:6px; border:1px solid var(--border); font-weight:600; font-size:11px; cursor:pointer; display:inline-flex; align-items:center; gap:6px; transition:0.2s; justify-content: center; }
     .btn.primary{ background:var(--primary); color:#fff; border:none; }
     .btn.success { background:var(--success); color:#fff; border:none; }
     .btn.outline { background: #fff; color: var(--text); }
+    .btn.outline:hover { background: #f8fafc; }
 
     .kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 12px; }
     .kpi-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); padding:16px; box-shadow: 0 2px 4px rgba(0,0,0,0.02); }
@@ -70,7 +78,7 @@
     td{ padding:4px 8px; border:1px solid var(--border); color:#334155; height: 32px; }
     .center { text-align: center; }
     .right { text-align: right; }
-    .bg-yellow { background-color: #fffde7 !important; font-weight: 800; }
+    .bg-total { background-color: #f8fafc !important; }
     .sticky-col { position: sticky; left: 0; z-index: 12; width: 80px !important; background: #f1f5f9 !important; font-weight: 800; border-right: 2px solid #cbd5e1; }
     .mono { font-family: 'Courier New', monospace; font-weight: 600; }
   </style>
@@ -81,7 +89,7 @@
   <header>
     <div class="brand-wrap">
       <button class="menu-toggle" onclick="toggleLNB()">&#9776;</button>
-      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.87</span></div>
+      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.89</span></div>
     </div>
     <div class="user"><strong style="font-size:12px">비즈니스기획팀 강형구 님</strong></div>
   </header>
@@ -108,7 +116,7 @@
         <div class="top-actions">
           <button class="btn outline" onclick="addMonth()">📅 월 추가</button>
           <button class="btn outline" onclick="addRow()">➕ 행 추가</button>
-          <label class="edit-mode-toggle">
+          <label class="edit-mode-toggle" id="editToggleLabel">
             <input type="checkbox" id="editToggle" onchange="toggleEditMode()">
             <span>수정 모드</span>
           </label>
@@ -123,9 +131,9 @@
     </div>
 
     <div class="kpi-row">
-      <div class="kpi-card"><div class="kpi-label">당월 지급액 계 (1월)</div><div class="kpi-value">8,475,000 <small>원</small></div><div class="kpi-sub text-danger">총 3건 집행</div></div>
+      <div class="kpi-card"><div class="kpi-label">당월 지급액 계 (1월)</div><div class="kpi-value">8,475,000 <small>원</small></div><div class="kpi-sub" style="color:var(--danger)">총 3건 집행</div></div>
       <div class="kpi-card"><div class="kpi-label">최대 지급 업체</div><div class="kpi-value">이비즈타운</div><div class="kpi-sub text-muted">4,900,000원 지급</div></div>
-      <div class="kpi-card"><div class="kpi-label">미집행 잔액</div><div class="kpi-value text-success">8,475,000 <small>원</small></div><div class="kpi-sub text-success">입금액 대비 정산 대기</div></div>
+      <div class="kpi-card"><div class="kpi-label">미집행 잔액</div><div class="kpi-value" style="color:var(--success)">8,475,000 <small>원</small></div><div class="kpi-sub" style="color:var(--success)">입금액 대비 정산 대기</div></div>
       <div class="kpi-card"><div class="kpi-label">프로그램 비중</div><div class="kpi-value">Sell-Out (81%)</div><div class="kpi-sub">총 6,900,000원</div></div>
     </div>
 
@@ -183,13 +191,15 @@
 
   function toggleLNB() { document.getElementById('appContainer').classList.toggle('lnb-hidden'); }
 
-  // [기능] 수정 모드 토글 (손익현황 로직 적용)
+  // [기능] 수정 모드 토글 및 버튼 스타일 제어
   function toggleEditMode() {
     const isEdit = document.getElementById('editToggle').checked;
+    const label = document.getElementById('editToggleLabel');
     document.getElementById('mainContainer').classList.toggle('edit-active', isEdit);
+    label.classList.toggle('active', isEdit);
   }
 
-  // [기능] 행 추가 (v1.3.87 풀 컬럼 대응)
+  // [기능] 행 추가
   function addRow() {
     const tbody = document.getElementById('rebateBody');
     const lastMonthGroup = `month-group-${currentMonthCount}`;
@@ -218,7 +228,7 @@
     }
   }
 
-  // [기능] 월 추가 (필터 연동)
+  // [기능] 월 추가
   function addMonth() {
     currentMonthCount++;
     const tbody = document.getElementById('rebateBody');
