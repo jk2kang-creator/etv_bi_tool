@@ -3,10 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>리베이트 분석 시스템 (v1.3.93)</title>
+  <title>리베이트 분석 시스템 (v1.3.94)</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <style>
-    /* --- v1.3.87~93 디자인 시스템 유지 --- */
+    /* --- 디자인 시스템 --- */
     :root{
       --bg:#f5f7fb; --card:#ffffff; --text:#1f2a37; --muted:#6b7280; --border:#e5e7eb;
       --primary:#1f5eff; --primary-2:#0b4bd6; --danger:#e11d48; --success:#10b981;
@@ -47,9 +47,21 @@
     .edit-mode-toggle.active { background: #eff6ff; border-color: var(--primary); }
     .edit-mode-toggle.active span { color: var(--primary); }
 
-    /* 테이블 입력/선택 필드 공통 스타일 */
-    .table-input { width: 100%; border: 1px solid transparent; background: transparent; text-align: inherit; padding: 2px 4px; font-family: inherit; font-size: inherit; color: inherit; border-radius: 4px; pointer-events: none; outline: none; appearance: none; }
-    .edit-active .table-input { pointer-events: auto; border-color: #cbd5e1; background: #ffffff; }
+    /* [개선] Select Box 및 Input 스타일 */
+    .table-input { 
+      width: 100%; border: 1px solid transparent; background: transparent; 
+      text-align: inherit; padding: 2px 4px; font-family: inherit; 
+      font-size: inherit; color: inherit; border-radius: 4px; 
+      pointer-events: none; outline: none; appearance: none; 
+    }
+    .edit-active .table-input { 
+      pointer-events: auto; border-color: #cbd5e1; background: #ffffff; 
+    }
+    /* Select 박스 화살표 표시 */
+    .edit-active select.table-input {
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='8' viewBox='0 0 8 8'%3E%3Cpath fill='%236b7280' d='M0 2l4 4 4-4z'/%3E%3C/svg%3E");
+      background-repeat: no-repeat; background-position: right 8px center; padding-right: 20px;
+    }
     .edit-active .editable-cell { background-color: #fffbeb !important; }
 
     .search-card { background:var(--card); border:1px solid var(--border); border-radius:var(--radius); box-shadow: 0 2px 4px rgba(0,0,0,0.02); padding:20px; margin-bottom:16px; }
@@ -86,7 +98,7 @@
   <header>
     <div class="brand-wrap">
       <button class="menu-toggle" onclick="toggleLNB()">&#9776;</button>
-      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.93</span></div>
+      <div class="brand">📊 ETEVERS GROUP 경영관리 시스템 <span class="pill">v1.3.94</span></div>
     </div>
     <div class="user"><strong style="font-size:12px">비즈니스기획팀 강형구 님</strong></div>
   </header>
@@ -138,9 +150,7 @@
         <thead>
           <tr>
             <th class="sticky-col">구분</th>
-            <th style="width:120px">프로그램명</th>
-            <th style="width:100px">품목구분</th>
-            <th style="width:120px">입금액(A)</th>
+            <th style="width:120px">리베이트 구분</th> <th style="width:120px">프로그램 명칭</th> <th style="width:120px">입금액(A)</th>
             <th style="width:120px">이월금액(B)</th>
             <th style="width:120px">(A)+(B)</th>
             <th style="width:120px">지급합계</th>
@@ -151,7 +161,7 @@
           </tr>
         </thead>
         <tbody id="rebateBody">
-          <tr class="month-group-1 data-row" data-month="1월">
+          <tr class="data-row" data-month="1월">
             <td rowspan="2" class="sticky-col center month-label">1월</td>
             <td class="editable-cell">
               <select class="table-input center">
@@ -161,7 +171,7 @@
                 <option value="MDF">MDF</option>
               </select>
             </td>
-            <td class="editable-cell"><input type="text" class="table-input center" value="-"></td>
+            <td class="editable-cell"><input type="text" class="table-input center" value="초기 프로그램"></td>
             <td class="editable-cell"><input type="text" class="table-input right mono val-a" value="1,000,000" oninput="calcAll()"></td>
             <td class="editable-cell"><input type="text" class="table-input right mono val-b" value="500,000" oninput="calcAll()"></td>
             <td class="right mono bg-subtotal row-ab">1,500,000</td>
@@ -209,19 +219,15 @@
     label.classList.toggle('active', isEdit);
   }
 
-  // 3) 저장 버튼 클릭 시 수정모드 Off
   function saveData() {
     alert('저장되었습니다.');
     const editToggle = document.getElementById('editToggle');
-    if (editToggle.checked) {
-      editToggle.checked = false;
-      toggleEditMode();
-    }
+    if (editToggle.checked) { editToggle.checked = false; toggleEditMode(); }
   }
 
-  // 1, 4) 자동 계산 및 월별 소계/총계 로직
   function calcAll() {
-    const months = [...new Set([...document.querySelectorAll('.data-row')].map(r => r.getAttribute('data-month')))];
+    const rows = document.querySelectorAll('.data-row');
+    const months = [...new Set([...rows].map(r => r.getAttribute('data-month')))];
     let grandA=0, grandB=0, grandPay=0;
 
     months.forEach(m => {
@@ -232,34 +238,26 @@
         const a = parseInt(row.querySelector('.val-a').value.replace(/,/g, '')) || 0;
         const b = parseInt(row.querySelector('.val-b').value.replace(/,/g, '')) || 0;
         const pay = parseInt(row.querySelector('.val-pay').value.replace(/,/g, '')) || 0;
-        
         const ab = a + b;
         const bal = ab - pay;
-        
         row.querySelector('.row-ab').innerText = ab.toLocaleString();
         row.querySelector('.row-balance').innerText = bal.toLocaleString();
-        
         mA += a; mB += b; mPay += pay;
       });
 
-      // 월별 소계 업데이트
       const subRow = document.querySelector(`.subtotal-row[data-month="${m}"]`);
       if(subRow) {
-        const mAB = mA + mB;
-        const mBal = mAB - mPay;
+        const mAB = mA + mB; const mBal = mAB - mPay;
         subRow.querySelector('.m-total-a').innerText = mA.toLocaleString();
         subRow.querySelector('.m-total-b').innerText = mB.toLocaleString();
         subRow.querySelector('.m-total-ab').innerText = mAB.toLocaleString();
         subRow.querySelector('.m-total-pay').innerText = mPay.toLocaleString();
         subRow.querySelector('.m-total-bal').innerText = mBal.toLocaleString();
       }
-      
       grandA += mA; grandB += mB; grandPay += mPay;
     });
 
-    // 전체 총계 업데이트
-    const gAB = grandA + grandB;
-    const gBal = gAB - grandPay;
+    const gAB = grandA + grandB; const gBal = gAB - grandPay;
     document.getElementById('totalA').innerText = grandA.toLocaleString();
     document.getElementById('totalB').innerText = grandB.toLocaleString();
     document.getElementById('totalAB').innerText = gAB.toLocaleString();
@@ -267,14 +265,50 @@
     document.getElementById('totalBal').innerText = gBal.toLocaleString();
   }
 
+  // [기능 개선] 행 추가 로직
+  function addRow() {
+    const tbody = document.getElementById('rebateBody');
+    const allDataRows = tbody.querySelectorAll('.data-row');
+    if(allDataRows.length === 0) { alert('월을 먼저 추가해주세요.'); return; }
+    
+    const lastDataRow = allDataRows[allDataRows.length - 1];
+    const month = lastDataRow.getAttribute('data-month');
+    const subRow = document.querySelector(`.subtotal-row[data-month="${month}"]`);
+    const firstRowOfGroup = document.querySelector(`.data-row[data-month="${month}"]`);
+    const labelTd = firstRowOfGroup.querySelector('.month-label');
+    
+    labelTd.setAttribute('rowspan', parseInt(labelTd.getAttribute('rowspan')) + 1);
+
+    const newRow = document.createElement('tr');
+    newRow.className = "data-row";
+    newRow.setAttribute('data-month', month);
+    newRow.innerHTML = `
+      <td class="editable-cell">
+        <select class="table-input center">
+          <option value="sell-In">sell-In</option><option value="sell-Thru">sell-Thru</option><option value="Sell-out">Sell-out</option><option value="MDF">MDF</option>
+        </select>
+      </td>
+      <td class="editable-cell"><input type="text" class="table-input center" value="신규 프로그램"></td>
+      <td class="editable-cell"><input type="text" class="table-input right mono val-a" value="0" oninput="calcAll()"></td>
+      <td class="editable-cell"><input type="text" class="table-input right mono val-b" value="0" oninput="calcAll()"></td>
+      <td class="right mono bg-subtotal row-ab">0</td><td class="right mono">0</td>
+      <td class="editable-cell"><input type="text" class="table-input right mono val-pay" value="0" oninput="calcAll()"></td>
+      <td class="editable-cell"><input type="text" class="table-input center" value="-"></td>
+      <td class="editable-cell"><input type="text" class="table-input center mono" value="-"></td>
+      <td class="right mono row-balance">0</td>
+    `;
+    subRow.parentNode.insertBefore(newRow, subRow);
+    
+    // 수정 모드 자동 On
+    const editToggle = document.getElementById('editToggle');
+    if (!editToggle.checked) { editToggle.checked = true; toggleEditMode(); }
+    calcAll();
+  }
+
   function addMonth() {
     const name = prompt("추가할 월을 입력하세요", (document.querySelectorAll('.month-label').length + 1) + "월");
     if(!name) return;
-    
     const tbody = document.getElementById('rebateBody');
-    const newId = Date.now();
-    
-    // 데이터 행과 소계 행을 세트로 추가
     const html = `
       <tr class="data-row" data-month="${name}">
         <td rowspan="2" class="sticky-col center month-label">${name}</td>
@@ -283,7 +317,7 @@
             <option value="sell-In">sell-In</option><option value="sell-Thru">sell-Thru</option><option value="Sell-out">Sell-out</option><option value="MDF">MDF</option>
           </select>
         </td>
-        <td class="editable-cell"><input type="text" class="table-input center" value="-"></td>
+        <td class="editable-cell"><input type="text" class="table-input center" value="신규 프로그램"></td>
         <td class="editable-cell"><input type="text" class="table-input right mono val-a" value="0" oninput="calcAll()"></td>
         <td class="editable-cell"><input type="text" class="table-input right mono val-b" value="0" oninput="calcAll()"></td>
         <td class="right mono bg-subtotal row-ab">0</td><td class="right mono">0</td>
@@ -302,56 +336,18 @@
     calcAll();
   }
 
-  function addRow() {
-    const tbody = document.getElementById('rebateBody');
-    const lastDataRow = tbody.querySelector('.data-row:last-of-type');
-    if(!lastDataRow) return;
-    
-    const month = lastDataRow.getAttribute('data-month');
-    const subRow = document.querySelector(`.subtotal-row[data-month="${month}"]`);
-    const labelTd = document.querySelector(`.data-row[data-month="${month}"] .month-label`);
-    labelTd.setAttribute('rowspan', parseInt(labelTd.getAttribute('rowspan')) + 1);
-
-    const newRow = document.createElement('tr');
-    newRow.className = "data-row";
-    newRow.setAttribute('data-month', month);
-    newRow.innerHTML = `
-      <td class="editable-cell">
-        <select class="table-input center">
-          <option value="sell-In">sell-In</option><option value="sell-Thru">sell-Thru</option><option value="Sell-out">Sell-out</option><option value="MDF">MDF</option>
-        </select>
-      </td>
-      <td class="editable-cell"><input type="text" class="table-input center" value="-"></td>
-      <td class="editable-cell"><input type="text" class="table-input right mono val-a" value="0" oninput="calcAll()"></td>
-      <td class="editable-cell"><input type="text" class="table-input right mono val-b" value="0" oninput="calcAll()"></td>
-      <td class="right mono bg-subtotal row-ab">0</td><td class="right mono">0</td>
-      <td class="editable-cell"><input type="text" class="table-input right mono val-pay" value="0" oninput="calcAll()"></td>
-      <td class="editable-cell"><input type="text" class="table-input center" value="-"></td>
-      <td class="editable-cell"><input type="text" class="table-input center mono" value="-"></td>
-      <td class="right mono row-balance">0</td>
-    `;
-    subRow.parentNode.insertBefore(newRow, subRow);
-    
-    const editToggle = document.getElementById('editToggle');
-    if (!editToggle.checked) { editToggle.checked = true; toggleEditMode(); }
-    calcAll();
-  }
-
   function deleteRow() {
     const tbody = document.getElementById('rebateBody');
     const allDataRows = tbody.querySelectorAll('.data-row');
     if (allDataRows.length > 1 && confirm("행을 삭제하시겠습니까?")) {
         const lastRow = allDataRows[allDataRows.length - 1];
         const month = lastRow.getAttribute('data-month');
-        const monthDataRows = document.querySelectorAll(`.data-row[data-month="${month}"]`);
-        
-        if(monthDataRows.length > 1) {
-            const labelTd = monthDataRows[0].querySelector('.month-label');
+        const monthRows = document.querySelectorAll(`.data-row[data-month="${month}"]`);
+        const labelTd = monthRows[0].querySelector('.month-label');
+        if(monthRows.length > 1) {
             labelTd.setAttribute('rowspan', parseInt(labelTd.getAttribute('rowspan')) - 1);
             tbody.removeChild(lastRow);
-        } else {
-            alert("해당 월의 마지막 데이터 행은 삭제할 수 없습니다.");
-        }
+        } else { alert("해당 월의 마지막 데이터 행은 삭제할 수 없습니다."); }
         calcAll();
     }
   }
